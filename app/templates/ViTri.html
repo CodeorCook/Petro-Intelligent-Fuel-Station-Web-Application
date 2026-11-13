@@ -1,0 +1,42 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Vị trí hiện tại - Petro{% endblock %}
+
+{% block content %}
+<main class="flex-grow flex flex-col md:flex-row h-[calc(100vh-65px)] overflow-hidden">
+  <!-- Left Column -->
+  <aside class="w-full md:w-[400px] h-full flex flex-col card-base rounded-none border-r border-outline-variant shadow-sm z-10 overflow-y-auto">
+    <div class="p-lg flex-1">
+      <div class="card-base p-md relative overflow-hidden">
+        <p class="text-label-md text-on-surface-variant flex items-center">
+          <span class="material-symbols-outlined text-[16px] mr-xs text-primary">my_location</span>
+          Bạn đang ở gần:
+        </p>
+        <h2 class="text-title-lg font-bold text-on-surface mt-sm">Đường 3/2, Ninh Kiều, Cần Thơ</h2>
+        <div class="grid grid-cols-2 gap-sm mt-md pt-sm border-t border-outline-variant/30">
+          <div>
+            <p class="text-label-md text-on-surface-variant">Tọa độ</p>
+            <p class="text-body-md text-on-surface font-semibold">10.0452° N, 105.7469° E</p>
+          </div>
+          <div>
+            <p class="text-label-md text-on-surface-variant">Độ chính xác</p>
+            <p class="text-body-md text-on-surface font-semibold">±10 m</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="mt-lg flex flex-col gap-sm">
+        <a href="/BanDo.html" class="btn-primary w-full py-3 text-center">
+          <span class="material-symbols-outlined">local_gas_station</span> Tìm trạm xăng gần nhất
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Map Panel -->
+  <section class="flex-1 relative h-full bg-surface-variant">
+    <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZnEN-yqbCRRfjsF7TqUpBLC-3iyaOKyEuEN38po7KJVistDZhZFl1f8wsYN9tESESNbkJnOXZDvNiPtaIlapFN2oBOPzR8Kl46J3YhHekR3xMz7-zdl0GowsFQhAd2Skr7OhTbw8h6OgFg_UDVyG1eKS35GpOmbSIgZwrDHN4AseygtDEqZ6-MdiX3IaYAbh104AWbE9JAuu5-tjlQ6f7apwxfBHTa6_Ez3CXHwQj2IlUCG4ZXhZBvA" alt="Vị trí hiện tại">
+  </section>
+</main>
+{% endblock %}

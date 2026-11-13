@@ -1,0 +1,143 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Chi tiết giao dịch - Petro{% endblock %}
+
+{% block content %}
+<main class="w-full max-w-[640px] mx-auto flex-grow flex flex-col p-md md:p-xl py-xl">
+  <!-- Receipt Card -->
+  <div class="card-base shadow-xl overflow-hidden flex flex-col relative border border-outline-variant/30">
+    <div class="p-lg pt-xl flex flex-col items-center border-b border-outline-variant/30 relative bg-surface-container-lowest">
+      <!-- Status Icon -->
+      <div id="ct-icon-wrapper" class="w-[64px] h-[64px] rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-md border-2 border-emerald-500/30">
+        <span id="ct-icon" class="material-symbols-outlined text-[36px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+      </div>
+      <!-- Status Text -->
+      <h1 id="ct-status-title" class="text-title-lg font-bold text-primary text-center mb-xs">Chi tiết giao dịch</h1>
+      <p id="ct-status-subtitle" class="text-body-md text-on-surface-variant text-center">Biên lai điện tử thanh toán nhiên liệu</p>
+    </div>
+
+    <!-- Receipt Details -->
+    <div class="p-lg flex flex-col gap-md">
+      <div class="flex justify-between items-start border-b border-outline-variant/20 pb-sm border-dashed">
+        <span class="text-body-md text-on-surface-variant">Mã giao dịch</span>
+        <span id="ct-gd-ma" class="text-body-md text-primary font-mono font-bold text-right">--</span>
+      </div>
+      <div class="flex justify-between items-start border-b border-outline-variant/20 pb-sm border-dashed">
+        <span class="text-body-md text-on-surface-variant">Trạm xăng</span>
+        <span id="ct-station" class="text-body-md text-on-surface font-semibold text-right">--</span>
+      </div>
+      <div class="flex justify-between items-start border-b border-outline-variant/20 pb-sm border-dashed">
+        <span class="text-body-md text-on-surface-variant">Địa chỉ</span>
+        <span id="ct-address" class="text-body-sm text-on-surface-variant font-medium text-right max-w-[65%]">--</span>
+      </div>
+      <div class="flex justify-between items-start border-b border-outline-variant/20 pb-sm border-dashed">
+        <span class="text-body-md text-on-surface-variant">Biển số phương tiện</span>
+        <span id="ct-vehicle" class="text-body-md text-primary font-mono font-bold text-right">--</span>
+      </div>
+      <div class="flex justify-between items-start border-b border-outline-variant/20 pb-sm border-dashed">
+        <span class="text-body-md text-on-surface-variant">Loại nhiên liệu</span>
+        <span id="ct-fuel" class="text-body-md text-on-surface font-semibold text-right">--</span>
+      </div>
+      <div class="flex justify-between items-start border-b border-outline-variant/20 pb-sm border-dashed">
+        <span class="text-body-md text-on-surface-variant">Đơn giá</span>
+        <span id="ct-dongia" class="text-body-md text-on-surface font-semibold text-right">--</span>
+      </div>
+      <div class="flex justify-between items-start border-b border-outline-variant/20 pb-sm border-dashed">
+        <span class="text-body-md text-on-surface-variant">Số lượng thực tế</span>
+        <span id="ct-soluong" class="text-body-md text-on-surface font-bold text-right">--</span>
+      </div>
+      <div class="flex justify-between items-start border-b border-outline-variant/20 pb-sm border-dashed">
+        <span class="text-body-md text-on-surface-variant">Thời gian</span>
+        <span id="ct-time" class="text-body-md text-on-surface font-medium text-right">--</span>
+      </div>
+      <div class="flex justify-between items-start border-b border-outline-variant/20 pb-sm border-dashed">
+        <span class="text-body-md text-on-surface-variant">Phương thức thanh toán</span>
+        <span id="ct-method" class="text-body-md text-on-surface font-semibold text-right">--</span>
+      </div>
+      <div class="flex justify-between items-start border-b border-outline-variant/20 pb-sm border-dashed">
+        <span class="text-body-md text-on-surface-variant">Trạng thái</span>
+        <span id="ct-status" class="text-body-md font-bold text-right">--</span>
+      </div>
+      <!-- Total Amount Highlight -->
+      <div class="flex justify-between items-center mt-sm pt-sm">
+        <span class="text-title-lg font-bold text-on-surface">Tổng tiền</span>
+        <span id="ct-amount" class="text-headline-md font-black text-primary">--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="mt-lg flex flex-col md:flex-row gap-md justify-center w-full">
+    <a href="/LichSu.html" class="btn-primary w-full md:w-auto flex-1 text-center py-3">
+      <span class="material-symbols-outlined">history</span>
+      Quay lại lịch sử
+    </a>
+    <button onclick="window.print()" class="btn-secondary w-full md:w-auto flex-1 text-center py-3">
+      <span class="material-symbols-outlined">print</span>
+      In biên lai
+    </button>
+    <a href="/" class="btn-secondary w-full md:w-auto flex-1 text-center py-3">
+      <span class="material-symbols-outlined">home</span>
+      Về trang chủ
+    </a>
+  </div>
+</main>
+
+<script src="/static/js/transaction_review.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const gd_ma = urlParams.get("gd_ma") || urlParams.get("gd");
+
+    if (!gd_ma) {
+      document.getElementById("ct-status-title").textContent = "Không tìm thấy giao dịch";
+      document.getElementById("ct-status-subtitle").textContent = "Vui lòng chọn giao dịch từ trang Lịch sử.";
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/payment/detail/${gd_ma}`);
+      if (!res.ok) {
+        throw new Error("Không thể tải thông tin giao dịch");
+      }
+      const data = await res.json();
+
+      document.getElementById("ct-gd-ma").textContent = data.gd_ma;
+      document.getElementById("ct-station").textContent = data.tx_ten;
+      document.getElementById("ct-address").textContent = data.tx_diachi;
+      document.getElementById("ct-vehicle").textContent = data.pt_bienso || "Chưa có";
+      document.getElementById("ct-fuel").textContent = data.nl_ten;
+      document.getElementById("ct-dongia").textContent = data.dongia_formatted;
+      document.getElementById("ct-soluong").textContent = `${data.soluong} Lít`;
+      document.getElementById("ct-time").textContent = `${data.date_formatted} ${data.time_formatted}`;
+      document.getElementById("ct-method").textContent = data.payment_method === "TIEN_MAT" ? "Tiền mặt (tại trạm)" : (data.payment_method || "VietQR");
+      document.getElementById("ct-amount").textContent = data.amount_formatted;
+
+      const isSuccess = data.is_success;
+      if (isSuccess) await PetroTransactionReview.mount(data.gd_ma, document.querySelector('main'), {auto:false});
+      const statusSpan = document.getElementById("ct-status");
+      const iconWrapper = document.getElementById("ct-icon-wrapper");
+      const icon = document.getElementById("ct-icon");
+      const title = document.getElementById("ct-status-title");
+
+      if (isSuccess) {
+        statusSpan.className = "text-body-md text-emerald-700 font-bold text-right";
+        statusSpan.textContent = "✓ " + data.status_name;
+        iconWrapper.className = "w-[64px] h-[64px] rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-md border-2 border-emerald-500/30";
+        icon.textContent = "check_circle";
+        title.textContent = "Thanh toán thành công";
+      } else {
+        statusSpan.className = "text-body-md text-amber-700 font-bold text-right";
+        statusSpan.textContent = "⏳ " + data.status_name;
+        iconWrapper.className = "w-[64px] h-[64px] rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mb-md border-2 border-amber-500/30";
+        icon.textContent = "hourglass_top";
+        title.textContent = "Chờ thanh toán";
+      }
+    } catch (e) {
+      console.error(e);
+      document.getElementById("ct-status-title").textContent = "Lỗi nạp biên lai";
+      document.getElementById("ct-status-subtitle").textContent = e.message;
+    }
+  });
+</script>
+{% endblock %}

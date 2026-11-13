@@ -1,0 +1,444 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Tìm trạm xăng gần bạn - Petro{% endblock %}
+
+{% block head_extra %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="/static/css/basemaps.css?v=5.3.1">
+<style>
+  #home-map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background-color: #f1f5f9;
+  }
+
+  .leaflet-pane img,
+  .leaflet-tile,
+  .leaflet-tile-container img {
+    max-width: none !important;
+    max-height: none !important;
+  }
+
+  /* Custom Leaflet Pin Styling */
+  .custom-station-pin {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .custom-station-pin:hover {
+    transform: scale(1.15) translateY(-4px);
+    z-index: 999 !important;
+  }
+
+  /* Custom Popup */
+  .leaflet-popup-content-wrapper {
+    padding: 0;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    border: 1px solid #e2e8f0;
+  }
+  .leaflet-popup-content {
+    margin: 0 !important;
+    line-height: 1.4;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="flex-grow w-full max-w-7xl mx-auto px-container-margin md:px-lg py-lg space-y-xl">
+  <!-- Hero Section -->
+  <section class="bg-surface-container rounded-2xl p-lg md:p-xl shadow-[0_2px_4px_rgba(0,0,0,0.05)] relative overflow-hidden">
+    <div class="absolute inset-0 opacity-10 pointer-events-none">
+      <div class="w-full h-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDdBFzhy4PFZGDohrMOvGNLLLH9uHTrDUvxmr2S5u15nY9RDWwaHyV1drgofa4Fr1ilosMG2Uc-0J1Icldpy2TMDgqwgmqArdcCdhHgUI2BNMDK6hDk_vyFph_4wUiNN8j9LYApoXieBql-uS8VItxh8KBDWj0g8JKaESs_q1LCf9FJJAqRJVh1dq4q146ja4Djz8znKBrMPADovWCO5_Zy1wzzqGm1160j_Qz4d4Li3klC44JyxV1JmQ');"></div>
+    </div>
+    <div class="relative z-10 max-w-3xl">
+      <h1 class="text-display-lg font-display-lg text-on-surface mb-sm font-bold">Tìm trạm xăng gần bạn</h1>
+      <p class="text-body-lg font-body-lg text-on-surface-variant mb-lg">Tìm trạm xăng nhanh chóng dựa trên vị trí thời gian thực và tình trạng giao thông</p>
+      <form action="/BanDo.html" method="GET" class="flex flex-col md:flex-row gap-sm items-start md:items-center">
+        <div class="relative flex-grow w-full">
+          <span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline">search</span>
+          <input name="search" class="input-base pl-xl pr-md py-md text-body-lg shadow-[0_2px_4px_rgba(0,0,0,0.05)]" placeholder="Tìm kiếm trạm xăng hoặc địa điểm..." type="text">
+        </div>
+        <div class="flex gap-sm w-full md:w-auto">
+          <a href="/BanDo.html" class="btn-secondary flex-1 md:flex-none py-md">
+            <span class="material-symbols-outlined text-[20px]">my_location</span>
+            Bản đồ trạm xăng
+          </a>
+          <a href="/BanDo.html?action=nearest" class="btn-primary flex-1 md:flex-none py-md">
+            <span class="material-symbols-outlined text-[20px]">near_me</span>
+            Gợi ý trạm phù hợp
+          </a>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Main Content Split -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+    <!-- Left Column: Interactive Map & Nearby Stations -->
+    <div class="lg:col-span-8 space-y-lg">
+      <!-- Interactive Real Leaflet Map -->
+      <section class="card-base overflow-hidden flex flex-col h-[420px] relative rounded-2xl shadow-md border border-surface-container-highest">
+        <div id="home-map" class="w-full h-full"></div>
+
+        <!-- Top Right Map Quick Action / Expand -->
+        <div class="absolute top-3 right-3 z-[1000] flex items-center gap-2">
+          <a href="/BanDo.html" class="bg-white/95 hover:bg-white text-primary text-xs font-bold px-3 py-2 rounded-xl shadow-md border border-slate-200 flex items-center gap-1.5 transition-all hover:shadow-lg active:scale-95">
+            <span class="material-symbols-outlined text-[18px]">fullscreen</span>
+            <span>Mở bản đồ lớn</span>
+          </a>
+        </div>
+
+        <!-- Bottom Left Traffic Legend -->
+        <div class="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md rounded-xl shadow-md px-3 py-1.5 flex items-center gap-3 z-[1000] border border-slate-200 text-xs">
+          <span class="font-bold text-gray-700">Giao thông:</span>
+          <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div><span class="text-gray-600">Thông thoáng</span></div>
+          <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div><span class="text-gray-600">Đông xe</span></div>
+          <div class="flex items-center gap-1"><div class="w-2.5 h-2.5 rounded-full bg-rose-500"></div><span class="text-gray-600">Ùn tắc</span></div>
+        </div>
+
+        <!-- Bottom Right Locate Button -->
+        <div class="absolute bottom-3 right-3 z-[1000]">
+          <button id="btn-home-locate" class="w-9 h-9 bg-white hover:bg-slate-50 text-primary rounded-xl shadow-md border border-slate-200 flex items-center justify-center transition-transform active:scale-95" title="Vị trí của tôi">
+            <span class="material-symbols-outlined text-[20px]">my_location</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Nearby Stations List -->
+      <section>
+        <div class="flex justify-between items-center mb-md">
+          <h2 class="text-headline-sm font-bold text-on-surface">Trạm xăng gần bạn</h2>
+          <a class="text-primary hover:underline text-body-md font-medium flex items-center gap-xs" href="/BanDo.html">
+            Xem tất cả <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+          </a>
+        </div>
+
+        <!-- Dynamic Carousel Container -->
+        <div id="nearby-stations-carousel" class="flex gap-md overflow-x-auto pb-sm custom-scrollbar min-h-[220px]">
+          <!-- Loading placeholder -->
+          <div class="w-full flex items-center justify-center py-10 text-secondary">
+            <span class="material-symbols-outlined animate-spin mr-2">progress_activity</span> Đang tải các trạm xăng gần bạn...
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Column: Sidebar -->
+    <div class="lg:col-span-4 space-y-lg">
+      <!-- Fuel Price Summary -->
+      <section class="card-base p-md rounded-2xl shadow-sm border border-surface-container-highest">
+        <h2 class="text-title-lg font-bold text-on-surface mb-md flex items-center gap-xs">
+          <span class="material-symbols-outlined text-primary">local_gas_station</span> Giá xăng dầu tham chiếu
+        </h2>
+        <div class="space-y-sm">
+          <div class="flex justify-between items-center py-xs border-b border-surface-variant">
+            <span id="home-fuel-name-NL000001" class="text-on-surface-variant font-body-md">Xăng E10 RON 95-III</span>
+            <span id="home-fuel-price-NL000001" class="text-on-surface font-bold text-primary">--</span>
+          </div>
+          <div class="flex justify-between items-center py-xs border-b border-surface-variant">
+            <span id="home-fuel-name-NL000002" class="text-on-surface-variant font-body-md">Xăng E5 RON 92-II</span>
+            <span id="home-fuel-price-NL000002" class="text-on-surface font-bold">--</span>
+          </div>
+          <div class="flex justify-between items-center py-xs border-b border-surface-variant">
+            <span id="home-fuel-name-NL000003" class="text-on-surface-variant font-body-md">Dầu DO 0,05S-II</span>
+            <span id="home-fuel-price-NL000003" class="text-on-surface font-bold">--</span>
+          </div>
+        </div>
+        <p id="price-update-time" class="text-label-md text-outline mt-sm text-right">Đang tải giá tham chiếu...</p>
+        <p id="home-price-source" class="text-label-md text-outline mt-xs text-right"></p>
+        <p id="home-price-notice" role="status" class="text-xs text-outline mt-xs text-right empty:hidden"></p>
+      </section>
+
+
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/fuel_price_ui.js?v=5.4"></script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/basemaps.js?v=5.3.1"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    // Giá trang chủ dùng cùng nguồn backend với trang Giá Xăng Dầu.
+    try {
+      const priceResponse = await fetch("/api/fuel-prices/latest");
+      if (!priceResponse.ok) throw new Error("Fuel price API failed");
+      const latest = await priceResponse.json();
+      const formatter = new Intl.NumberFormat("vi-VN");
+      if (!["NL000001","NL000002","NL000003"].every(id=>latest.items?.some(item=>item.fuel_id===id && Number.isFinite(item.current_price) && item.current_price>0))) throw new Error("Incomplete published prices");
+      latest.items.forEach(item => {
+        const name = document.getElementById(`home-fuel-name-${item.fuel_id}`);
+        const price = document.getElementById(`home-fuel-price-${item.fuel_id}`);
+        if (name) name.textContent = item.name;
+        if (price) price.textContent = `${formatter.format(item.current_price)} đ/L`;
+      });
+      const dateText = latest.effective_date
+        ? new Date(`${latest.effective_date}T00:00:00`).toLocaleDateString("vi-VN")
+        : "chưa xác định";
+      document.getElementById("price-update-time").textContent =
+        `Kỳ áp dụng: ${dateText}${latest.effective_time ? ` ${latest.effective_time}` : ""}`;
+      document.getElementById("home-price-source").textContent = latest.source === 'petrolimex'
+        ? 'Nguồn: Petrolimex – Vùng 2' : 'Nguồn: chưa xác minh Petrolimex';
+      document.getElementById("home-price-notice").textContent = latest.is_stale || latest.sync_error
+        ? 'Đang hiển thị kỳ giá gần nhất có sẵn.' : '';
+    } catch (error) {
+      console.error("Không thể tải giá nhiên liệu trang chủ:", error);
+      document.getElementById("price-update-time").textContent = "Chưa tải được giá. Vui lòng thử lại sau.";
+    }
+
+    // 1. Tọa độ mặc định Cần Thơ
+    const canThoCoords = [10.0298, 105.7765];
+    let userLat = canThoCoords[0];
+    let userLng = canThoCoords[1];
+
+    // Khởi tạo bản đồ
+    const homeMap = L.map("home-map", {
+      zoomControl: false,
+      dragging: true,
+      touchZoom: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      boxZoom: true,
+      keyboard: true
+    }).setView(canThoCoords, 13);
+
+    PetroBasemaps.attach(homeMap);
+
+    L.control.zoom({ position: "topleft" }).addTo(homeMap);
+
+    // ResizeObserver/pageshow/visualViewport invalidation is owned by basemaps.
+
+    // 2. Lấy vị trí người dùng
+    let userMarker = null;
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise((res, rej) =>
+          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3500 })
+        );
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+      } catch (err) {
+        console.log("Dùng vị trí Cần Thơ");
+      }
+    }
+
+    // Vẽ marker người dùng
+    userMarker = L.marker([userLat, userLng], {
+      icon: L.divIcon({
+        className: "home-user-pin",
+        html: `
+          <div class="relative flex items-center justify-center w-8 h-8">
+            <div class="absolute w-8 h-8 rounded-full bg-blue-500 opacity-30 animate-ping"></div>
+            <div class="w-4 h-4 rounded-full bg-blue-600 border-2 border-white shadow-md"></div>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      })
+    }).addTo(homeMap).bindPopup("<div class='p-2 font-bold text-center text-sm'>Vị trí của bạn</div>");
+
+    // Nút định vị
+    document.getElementById("btn-home-locate")?.addEventListener("click", () => {
+      homeMap.flyTo([userLat, userLng], 15, { animate: true });
+      if (userMarker) userMarker.openPopup();
+    });
+
+    // 3. Tải danh sách trạm xăng từ API
+    const stationMarkers = {};
+    async function refreshPublicMap() {
+    for (const id of Object.keys(stationMarkers)) {
+      homeMap.removeLayer(stationMarkers[id]);
+      delete stationMarkers[id];
+    }
+    try {
+      const res = await fetch(`/api/map/stations?lat=${userLat}&lng=${userLng}`);
+      if (!res.ok) throw new Error("Không thể tải thông tin trạm");
+      const data = await res.json();
+
+      if (data.status === "success" && data.stations.length > 0) {
+        const bounds = L.latLngBounds();
+
+        data.stations.forEach(st => {
+          const brandColor = st.brand_color || "#006c49";
+          const distLabel = PetroTravelFormat.straight(st.straight_line_distance_km);
+
+          // Custom Marker Pin
+          const marker = L.marker([st.lat, st.lng], {
+            icon: L.divIcon({
+              className: "custom-station-pin",
+              html: `
+                <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+                  ${distLabel ? `
+                    <div style="background: white; border: 1.5px solid ${brandColor}; color: #1e293b; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(0,0,0,0.15); margin-bottom: 2px; white-space: nowrap;">
+                      ${distLabel}
+                    </div>
+                  ` : ''}
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: ${brandColor}; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.25); border: 2px solid white;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; font-variation-settings: 'FILL' 1;">local_gas_station</span>
+                  </div>
+                </div>
+              `,
+              iconSize: [46, 52],
+              iconAnchor: [23, 50]
+            })
+          }).addTo(homeMap);
+
+          // Popup thông tin trạm
+          const popupHtml = `
+            <div style="padding: 12px; min-width: 220px;">
+              <div style="font-weight: 800; font-size: 14px; color: #0f172a; margin-bottom: 4px;">${petroEscapeHtml(st.tx_ten)}</div>
+              <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">${petroEscapeHtml(st.tx_diachi)}</div>
+              <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px; font-size: 12px;">
+                <span style="color: #475569;">Khoảng cách:</span>
+                <span style="font-weight: 700; color: #006c49;">${distLabel || 'Chưa có vị trí'}</span>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <a href="/ChiDuong.html?tx_ma=${st.tx_ma}" style="flex: 1; text-align: center; background: #006c49; color: white; padding: 6px 0; border-radius: 8px; font-weight: 700; font-size: 12px; text-decoration: none;">
+                  Chỉ đường
+                </a>
+                <a href="/ChiTiet.html?tx_ma=${st.tx_ma}" style="flex: 1; text-align: center; background: #f1f5f9; color: #1e293b; padding: 6px 0; border-radius: 8px; font-weight: 600; font-size: 12px; text-decoration: none; border: 1px solid #cbd5e1;">
+                  Chi tiết
+                </a>
+              </div>
+            </div>
+          `;
+
+          marker.bindPopup(popupHtml);
+          stationMarkers[st.tx_ma] = marker;
+          bounds.extend([st.lat, st.lng]);
+        });
+
+        if (userLat >= 9.8 && userLat <= 10.3 && userLng >= 105.5 && userLng <= 106.0) {
+          bounds.extend([userLat, userLng]);
+        }
+
+        homeMap.fitBounds(bounds, { padding: [40, 40] });
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải trạm xăng:", err);
+    }
+    }
+    await refreshPublicMap();
+    window.addEventListener("focus", () => {
+      refreshPublicMap();
+    });
+
+    // 4. Tải danh sách Trạm Xăng Gần Bạn vào Carousel
+    const carousel = document.getElementById("nearby-stations-carousel");
+    try {
+      const recommendationRes = await fetch("/api/routing/recommendations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ latitude: userLat, longitude: userLng, heading: null, radius_km: 10, exclude_stations: [], limit: 3 })
+      });
+      const recommendationData = await recommendationRes.json();
+      const displayRes = await fetch(`/api/map/stations?lat=${userLat}&lng=${userLng}`);
+      const displayData = await displayRes.json();
+      const displayById = Object.fromEntries((displayData.stations || []).map(st => [st.tx_ma, st]));
+      const data = {
+        status: "success",
+        stations: (recommendationData.recommendations || []).map(rec => ({
+          ...displayById[rec.station_id],
+          distance: rec.distance_km,
+          duration: rec.duration_minutes,
+          routing_source: rec.routing_source,
+          is_fallback: rec.is_fallback,
+          traffic: rec.traffic_level,
+          labels: rec.labels,
+          reason: rec.reason
+        })).filter(st => st.tx_ma)
+      };
+
+      if (data.status === "success" && data.stations.length > 0) {
+        carousel.innerHTML = "";
+
+        data.stations.forEach(st => {
+          const card = document.createElement("div");
+          card.className = "min-w-[300px] md:min-w-[320px] card-base p-md flex flex-col gap-sm flex-shrink-0 hover:shadow-lg transition-all rounded-2xl border border-surface-container-highest bg-surface-container-lowest cursor-pointer";
+
+          // Lấy giá nhiên liệu đầu tiên
+          const fuel = st.fuels && st.fuels.length > 0 ? st.fuels[0] : null;
+          const formattedPrice = fuel ? new Intl.NumberFormat("vi-VN").format(fuel.price) + " " + (fuel.unit || "") : "Chưa có giá";
+
+          // Màu tình trạng giao thông
+          let trafficBg = "bg-emerald-100 text-emerald-800";
+          if (st.traffic === "Đông xe" || st.traffic === "Đông") {
+            trafficBg = "bg-amber-100 text-amber-800";
+          } else if (st.traffic === "Ùn tắc") {
+            trafficBg = "bg-rose-100 text-rose-800";
+          }
+
+          card.innerHTML = `
+            <div class="flex justify-between items-start">
+              <div class="flex-1 pr-2">
+                <h3 class="text-title-md font-bold text-on-surface line-clamp-1">${petroEscapeHtml(st.tx_ten)}</h3>
+                <div class="flex items-center gap-sm mt-xs">
+                  <span class="flex items-center gap-xs text-secondary text-xs">
+                    <span class="material-symbols-outlined text-[15px] text-primary">location_on</span> ${PetroTravelFormat.road({distance_km:st.distance, routing_source:st.routing_source, is_fallback:st.is_fallback})}
+                  </span>
+                  <span class="text-outline-variant">•</span>
+                  <span class="flex items-center gap-xs text-secondary text-xs">
+                    <span class="material-symbols-outlined text-[15px]">schedule</span> ${PetroTravelFormat.eta({duration_minutes:st.duration, routing_source:st.routing_source, is_fallback:st.is_fallback})}
+                  </span>
+                </div>
+              </div>
+              <div class="${trafficBg} text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                ${st.traffic || "Thông thoáng"}
+              </div>
+            </div>
+
+            <p class="text-xs text-secondary line-clamp-1">${petroEscapeHtml(st.tx_diachi)}</p>
+
+            <div class="flex items-center gap-sm mt-0.5">
+              <div class="flex items-center text-amber-500">
+                <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+                <span class="text-on-surface font-bold text-xs ml-1">${st.rating == null ? "Chưa có" : st.rating}</span>
+              </div>
+              <span class="text-outline-variant">•</span>
+              <span class="text-secondary text-xs">${(st.labels || []).join(" • ")}</span>
+            </div>
+
+            <div class="bg-surface-container-low p-2 rounded-xl border border-surface-container-high mt-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-secondary font-medium">${fuel ? fuel.name : "Chưa có dữ liệu giá"}</span>
+                <span class="text-primary font-bold">${formattedPrice}</span>
+              </div>
+            </div>
+
+            <div class="flex gap-2 mt-2 pt-1 border-t border-surface-container-high">
+              <a href="/ChiTiet.html?tx_ma=${st.tx_ma}" class="btn-secondary flex-1 py-1.5 text-xs text-center rounded-xl">
+                Xem chi tiết
+              </a>
+              <a href="/ChiDuong.html?tx_ma=${st.tx_ma}" class="btn-primary flex-1 py-1.5 text-xs text-center rounded-xl flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">directions</span> Chỉ đường
+              </a>
+            </div>
+          `;
+
+          // Click card -> Pan map tới trạm
+          card.addEventListener("click", (e) => {
+            if (e.target.closest("a")) return;
+            homeMap.flyTo([st.lat, st.lng], 15, { animate: true });
+            if (stationMarkers[st.tx_ma]) {
+              stationMarkers[st.tx_ma].openPopup();
+            }
+          });
+
+          carousel.appendChild(card);
+        });
+      } else {
+        carousel.innerHTML = `<div class="p-4 text-secondary text-sm">Không tìm thấy trạm xăng phù hợp.</div>`;
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải carousel trạm gần nhất:", err);
+      carousel.innerHTML = `<div class="p-4 text-red-500 text-sm">Không thể tải danh sách trạm xăng gần bạn.</div>`;
+    }
+  });
+</script>
+{% endblock %}

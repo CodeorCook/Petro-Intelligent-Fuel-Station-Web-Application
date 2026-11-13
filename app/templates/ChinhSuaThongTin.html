@@ -1,0 +1,657 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Chỉnh sửa thông tin & Quản lý xe - Petro{% endblock %}
+
+{% block content %}
+<main class="flex-grow w-full max-w-7xl mx-auto px-container-margin md:px-lg py-lg md:py-xl space-y-lg">
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-surface-container-lowest border-l-4 border-primary shadow-xl rounded-xl p-4 flex items-start gap-3 w-[90%] max-w-md z-50 transition-all duration-300 opacity-0 pointer-events-none translate-y-[-10px]">
+    <span id="toast-icon" class="material-symbols-outlined text-primary mt-0.5">check_circle</span>
+    <div class="flex-grow">
+      <p id="toast-title" class="font-title-lg text-title-lg text-on-surface font-bold">Thành công</p>
+      <p id="toast-message" class="font-body-md text-body-md text-on-surface-variant mt-0.5">Thông tin tài khoản đã được cập nhật.</p>
+    </div>
+    <button class="text-on-surface-variant hover:text-on-surface transition-colors" onclick="hideToast()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+
+  <!-- Breadcrumb & Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-outline-variant/30 pb-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-secondary mb-1">
+        <a href="/TaiKhoan.html" class="hover:text-primary transition-colors flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">arrow_back</span>
+          Tài khoản
+        </a>
+        <span>/</span>
+        <span class="text-on-surface" id="page-breadcrumb-sub">Cài đặt cá nhân & Xe</span>
+      </div>
+      <h1 class="text-headline-sm md:text-headline-md font-bold text-on-surface" id="page-main-title">Hồ Sơ & Phương Tiện Đổ Xăng</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/TaiKhoan.html" class="btn-secondary py-2 px-4 text-xs font-bold rounded-xl flex items-center gap-1">
+        <span class="material-symbols-outlined text-base">arrow_back</span>
+        Quay lại
+      </a>
+      <a href="/ThanhToan.html" id="btn-header-datxang" class="btn-primary py-2 px-4 text-xs font-bold rounded-xl flex items-center gap-1">
+        <span class="material-symbols-outlined text-base">local_gas_station</span>
+        Đặt xăng ngay
+      </a>
+    </div>
+  </div>
+
+  <!-- Main Grid Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+    
+    <!-- ======================================================== -->
+    <!-- CỘT 1: THÔNG TIN CÁ NHÂN (Họ tên, email, sđt, giới tính) -->
+    <!-- ======================================================== -->
+    <div id="profile-info-col" class="lg:col-span-5 flex flex-col gap-md">
+      <div class="card-base p-6 md:p-8 border border-outline-variant/30 shadow-sm bg-surface-container-lowest relative">
+        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-outline-variant/20">
+          <div class="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-2xl">badge</span>
+          </div>
+          <div>
+            <h2 class="text-title-lg font-bold text-on-surface">Thông tin cá nhân</h2>
+            <p class="text-xs text-secondary">Cập nhật hồ sơ liên lạc và tài khoản</p>
+          </div>
+        </div>
+
+        <!-- User Avatar & Badge -->
+        <div class="flex flex-col items-center mb-6">
+          <div class="relative w-24 h-24 mb-3">
+            <div class="w-full h-full rounded-full bg-primary/10 text-primary border-4 border-surface-container-low flex items-center justify-center shadow-md">
+              <span class="material-symbols-outlined text-5xl">person</span>
+            </div>
+          </div>
+          <span id="display-role-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
+            Khách hàng
+          </span>
+          <p id="display-username" class="text-xs text-secondary font-mono mt-1">@username</p>
+        </div>
+
+        <form id="profile-form" onsubmit="event.preventDefault(); saveProfile();" class="flex flex-col gap-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-label-md font-bold text-on-surface" for="fullName">
+              Họ và tên <span class="text-error">*</span>
+            </label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">person</span>
+              <input class="input-base pl-10" id="fullName" type="text" required placeholder="Nhập họ và tên đầy đủ">
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-label-md font-bold text-on-surface" for="email">
+              Địa chỉ Email <span class="text-error">*</span>
+            </label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">mail</span>
+              <input class="input-base pl-10" id="email" type="email" required placeholder="email@example.com">
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-label-md font-bold text-on-surface" for="phone">
+              Số điện thoại <span class="text-error">*</span>
+            </label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">call</span>
+              <input class="input-base pl-10" id="phone" type="tel" required placeholder="0901234567">
+            </div>
+          </div>
+
+          <fieldset id="profile-gender" hidden disabled style="display:none">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-label-md font-bold text-on-surface">Giới tính</label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="flex items-center gap-2 p-3 border border-outline-variant/40 rounded-xl cursor-pointer hover:border-primary transition-all">
+                <input type="radio" name="gender" value="Nam" id="gender-nam" class="accent-primary" checked>
+                <span class="text-sm font-semibold text-on-surface">Nam</span>
+              </label>
+              <label class="flex items-center gap-2 p-3 border border-outline-variant/40 rounded-xl cursor-pointer hover:border-primary transition-all">
+                <input type="radio" name="gender" value="Nữ" id="gender-nu" class="accent-primary">
+                <span class="text-sm font-semibold text-on-surface">Nữ</span>
+              </label>
+            </div>
+          </div>
+          </fieldset>
+
+          <div class="pt-4 border-t border-outline-variant/20 mt-2">
+            <button id="btn-save-profile" type="submit" class="btn-primary w-full py-3 rounded-xl flex items-center justify-center gap-2 font-bold shadow-md">
+              <span class="material-symbols-outlined text-lg">save</span>
+              <span>Lưu thông tin cá nhân</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- CỘT 2: QUẢN LÝ XE & BIỂN SỐ XE KHÁCH HÀNG                -->
+    <!-- ======================================================== -->
+    <div id="vehicle-management-col" class="lg:col-span-7 flex flex-col gap-md">
+      
+      <!-- Card: Header & Vehicle List -->
+      <div class="card-base p-6 md:p-8 border border-outline-variant/30 shadow-sm bg-surface-container-lowest">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-outline-variant/20">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-2xl">directions_car</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-title-lg font-bold text-on-surface">Danh sách xe & Biển số</h2>
+                <span id="vehicle-count-badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary">0 xe</span>
+              </div>
+              <p class="text-xs text-secondary">Được lưu để tự động chọn khi bạn đặt xăng tại trạm</p>
+            </div>
+          </div>
+          <button type="button" onclick="openAddVehicleModal()" class="btn-primary py-2.5 px-4 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm shrink-0">
+            <span class="material-symbols-outlined text-base">add_circle</span>
+            Thêm xe mới
+          </button>
+        </div>
+
+        <!-- Vehicle Cards Container -->
+        <div id="vehicle-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Loading placeholder -->
+          <div class="col-span-full text-center py-8 text-secondary">
+            <span class="material-symbols-outlined animate-spin text-3xl text-primary mb-2">progress_activity</span>
+            <p class="text-sm">Đang tải danh sách xe của bạn...</p>
+          </div>
+        </div>
+
+        <!-- Tip Box -->
+        <div class="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200 flex items-start gap-3">
+          <span class="material-symbols-outlined text-blue-600 text-xl mt-0.5 shrink-0">info</span>
+            <!-- [Ghi chú] Mẹo gốc hỗ trợ cả xe máy và ô tô:
+            <b>Mẹo sử dụng:</b> Khi thêm biển số xe của bạn (xe máy hoặc ô tô), hệ thống sẽ tự động đề xuất phương tiện này ở bước <b>Chọn xe</b> khi bạn đổ xăng tại trang <a href="/ThanhToan.html" class="underline font-bold text-blue-800">Thanh toán xăng</a>.
+            -->
+            <div class="text-xs text-blue-900 leading-relaxed">
+              <b>Mẹo cho tài xế ô tô:</b> Khi lưu biển số xe ô tô của bạn, hệ thống sẽ tự động đồng bộ ở bước <b>Chọn xe</b> khi bạn đặt và thanh toán xăng tại <a href="/ThanhToan.html" class="underline font-bold text-blue-800">Thanh toán xăng</a>, giúp nhân viên trạm nhận diện xe nhanh chóng qua camera và bơm đúng loại nhiên liệu (RON 95 hoặc Dầu Diesel).
+            </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: THÊM PHƯƠNG TIỆN MỚI                              -->
+  <!-- ======================================================== -->
+  <div id="modal-add-vehicle" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="card-base w-full max-w-lg p-6 md:p-8 bg-surface-container-lowest border border-outline-variant/40 shadow-2xl rounded-2xl transform scale-95 transition-transform duration-300" id="modal-vehicle-content">
+      
+      <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-5">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <span class="material-symbols-outlined text-xl">garage</span>
+          </div>
+          <div>
+            <h3 class="text-title-md font-bold text-on-surface">Thêm xe & Biển số mới</h3>
+            <p class="text-xs text-secondary">Đăng ký phương tiện cho tài khoản của bạn</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAddVehicleModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-secondary hover:bg-surface-container-high transition-colors">
+          <span class="material-symbols-outlined text-lg">close</span>
+        </button>
+      </div>
+
+      <form id="add-vehicle-form" onsubmit="event.preventDefault(); submitAddVehicle();" class="flex flex-col gap-4">
+        
+        <!-- Biển số xe -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-label-md font-bold text-on-surface" for="input-pt-bienso">
+            Biển số xe <span class="text-error">*</span>
+          </label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">pin</span>
+            <!-- [Ghi chú] Placeholder gốc: placeholder="VD: 65A-888.88 hoặc 59P1-12345" -->
+            <input class="input-base pl-10 uppercase font-mono font-bold text-primary tracking-wider" id="input-pt-bienso" type="text" required placeholder="VD: 51K-888.88 hoặc 30H-123.45" maxlength="12">
+          </div>
+          <span class="text-[11px] text-secondary">Nhập đúng biển số xe ô tô theo đăng kiểm (tối đa 12 ký tự)</span>
+        </div>
+
+        <!-- Tên gợi nhớ phương tiện -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-label-md font-bold text-on-surface" for="input-pt-ten">
+            Tên phương tiện <span class="text-error">*</span>
+          </label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">drive_file_rename_outline</span>
+            <!-- [Ghi chú] Placeholder gốc: placeholder="VD: Honda Vision, Toyota Vios, Mazda CX-5" -->
+            <input class="input-base pl-10 font-semibold" id="input-pt-ten" type="text" required placeholder="VD: Toyota Vios, Mazda CX-5, Ford Ranger, VinFast VF8" maxlength="32">
+          </div>
+        </div>
+
+        <!-- Loại phương tiện -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-label-md font-bold text-on-surface" for="select-lpt-ma">
+            Loại phương tiện <span class="text-error">*</span>
+          </label>
+          <div class="relative">
+            <select class="input-base py-3 font-semibold text-on-surface bg-surface border-outline-variant/50 focus:border-primary rounded-xl shadow-sm" id="select-lpt-ma" required>
+              <option value="">-- Đang tải loại phương tiện --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Preview Biển số -->
+        <div class="mt-2 p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 flex items-center justify-between">
+          <span class="text-xs text-secondary font-medium">Mô phỏng biển số ô tô:</span>
+          <div class="px-4 py-1.5 rounded-md bg-white border-2 border-slate-800 shadow-inner flex items-center justify-center font-mono font-black text-slate-900 tracking-widest text-sm" id="plate-preview-badge">
+            <!-- [Ghi chú] Preview gốc: 65A-XXXXX -->
+            51K-XXXXX
+          </div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant/20 mt-2">
+          <button type="button" onclick="closeAddVehicleModal()" class="btn-secondary py-2.5 px-4 text-xs font-bold rounded-xl">
+            Hủy bỏ
+          </button>
+          <button id="btn-submit-vehicle" type="submit" class="btn-primary py-2.5 px-5 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md">
+            <span class="material-symbols-outlined text-base">check</span>
+            <span>Xác nhận thêm xe</span>
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+</main>
+
+<script>
+  let cachedUser = null;
+  let cachedVehicleTypes = [];
+
+  // ==========================================================
+  // TOAST NOTIFICATIONS
+  // ==========================================================
+  let toastTimer = null;
+  function showToast(title, message, isError = false) {
+    const toast = document.getElementById("toast");
+    const icon = document.getElementById("toast-icon");
+    const tTitle = document.getElementById("toast-title");
+    const tMsg = document.getElementById("toast-message");
+
+    tTitle.textContent = title;
+    tMsg.textContent = message;
+
+    if (isError) {
+      toast.className = "fixed top-20 left-1/2 transform -translate-x-1/2 bg-red-50 border-l-4 border-red-500 shadow-xl rounded-xl p-4 flex items-start gap-3 w-[90%] max-w-md z-50 transition-all duration-300 opacity-100 translate-y-0";
+      icon.className = "material-symbols-outlined text-red-500 mt-0.5";
+      icon.textContent = "error";
+      tTitle.className = "font-title-lg text-title-lg text-red-900 font-bold";
+      tMsg.className = "font-body-md text-body-md text-red-700 mt-0.5";
+    } else {
+      toast.className = "fixed top-20 left-1/2 transform -translate-x-1/2 bg-surface-container-lowest border-l-4 border-primary shadow-xl rounded-xl p-4 flex items-start gap-3 w-[90%] max-w-md z-50 transition-all duration-300 opacity-100 translate-y-0";
+      icon.className = "material-symbols-outlined text-primary mt-0.5";
+      icon.textContent = "check_circle";
+      tTitle.className = "font-title-lg text-title-lg text-on-surface font-bold";
+      tMsg.className = "font-body-md text-body-md text-on-surface-variant mt-0.5";
+    }
+
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      hideToast();
+    }, 4000);
+  }
+
+  function hideToast() {
+    const toast = document.getElementById("toast");
+    toast.classList.add("opacity-0", "pointer-events-none", "translate-y-[-10px]");
+    toast.classList.remove("opacity-100", "translate-y-0");
+  }
+
+  // ==========================================================
+  // KHỞI TẠO VÀ TẢI DỮ LIỆU
+  // ==========================================================
+  document.addEventListener("DOMContentLoaded", async () => {
+    // Lắng nghe thay đổi input biển số để preview
+    const inputPlate = document.getElementById("input-pt-bienso");
+    inputPlate.addEventListener("input", (e) => {
+      const val = e.target.value.trim().toUpperCase();
+      document.getElementById("plate-preview-badge").textContent = val || "65A-XXXXX";
+    });
+
+    await loadUserProfile();
+    if (cachedUser?.role !== "DOANH_NGHIEP") {
+      await Promise.all([
+        loadVehicleTypes(),
+        loadVehicles(),
+      ]);
+    }
+  });
+
+  // Tải hồ sơ người dùng
+  async function loadUserProfile() {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) {
+        window.location.href = "/DangNhap.html";
+        return;
+      }
+      const user = await res.json();
+      cachedUser = user;
+      localStorage.setItem("petro_user", JSON.stringify(user));
+
+      document.getElementById("fullName").value = user.name || "";
+      document.getElementById("email").value = user.email || "";
+      document.getElementById("phone").value = user.phone || "";
+      document.getElementById("display-username").textContent = `@${user.username}`;
+
+      const badge = document.getElementById("display-role-badge");
+      if (user.role === "DOANH_NGHIEP") {
+        badge.textContent = "🏢 Doanh nghiệp";
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-800 border border-blue-300";
+
+        // Ẩn mục quản lý xe và mở rộng căn giữa cột thông tin tài khoản doanh nghiệp
+        const vehicleCol = document.getElementById("vehicle-management-col");
+        if (vehicleCol) vehicleCol.style.display = "none";
+
+        const profileCol = document.getElementById("profile-info-col");
+        if (profileCol) {
+          profileCol.className = "lg:col-span-8 lg:col-start-3 max-w-2xl mx-auto w-full flex flex-col gap-md";
+        }
+
+        const btnDatXang = document.getElementById("btn-header-datxang");
+        if (btnDatXang) btnDatXang.style.display = "none";
+
+        const mainTitle = document.getElementById("page-main-title");
+        if (mainTitle) mainTitle.textContent = "Hồ Sơ & Cài Đặt Tài Khoản";
+
+        const breadcrumbSub = document.getElementById("page-breadcrumb-sub");
+        if (breadcrumbSub) breadcrumbSub.textContent = "Cài đặt tài khoản doanh nghiệp";
+      } else {
+        badge.textContent = "🚗 Khách hàng";
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300";
+      }
+
+      const genderFields = document.getElementById("profile-gender");
+      const isEnterprise = user.role === "DOANH_NGHIEP";
+      genderFields.hidden = isEnterprise;
+      genderFields.disabled = isEnterprise;
+      genderFields.style.display = isEnterprise ? "none" : "";
+      if (!isEnterprise && user.gender === "Nữ") {
+        document.getElementById("gender-nu").checked = true;
+      } else if (!isEnterprise) {
+        document.getElementById("gender-nam").checked = true;
+      }
+
+    } catch (e) {
+      console.error(e);
+      showToast("Lỗi", "Không thể tải thông tin hồ sơ tài khoản", true);
+    }
+  }
+
+  // Lưu thông tin cá nhân
+  async function saveProfile() {
+    if (!cachedUser) {
+      showToast("Đang tải hồ sơ", "Vui lòng chờ tải thông tin tài khoản rồi thử lại.", true);
+      return;
+    }
+    const btn = document.getElementById("btn-save-profile");
+    const name = document.getElementById("fullName").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const gender = document.querySelector('input[name="gender"]:checked')?.value || "Nam";
+
+    if (!name || !email || !phone) {
+      showToast("Lỗi nhập liệu", "Vui lòng nhập đầy đủ các trường bắt buộc", true);
+      return;
+    }
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-lg">progress_activity</span> Đang lưu...`;
+
+      const res = await fetch("/api/auth/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone, ...(cachedUser.role === "DOANH_NGHIEP" ? {} : { gender }) }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Không thể cập nhật thông tin");
+      }
+
+      if (cachedUser) {
+        cachedUser.name = name;
+        cachedUser.email = email;
+        cachedUser.phone = phone;
+        if (cachedUser.role !== "DOANH_NGHIEP") cachedUser.gender = gender;
+        localStorage.setItem("petro_user", JSON.stringify(cachedUser));
+      }
+      showToast("Thành công", "Thông tin cá nhân đã được lưu thành công!");
+    } catch (err) {
+      showToast("Lỗi cập nhật", err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span class="material-symbols-outlined text-lg">save</span> <span>Lưu thông tin cá nhân</span>`;
+    }
+  }
+
+  // ==========================================================
+  // QUẢN LÝ PHƯƠNG TIỆN
+  // ==========================================================
+  async function loadVehicleTypes() {
+    try {
+      const res = await fetch("/api/auth/vehicle-types");
+      if (!res.ok) return;
+      cachedVehicleTypes = await res.json();
+
+      const select = document.getElementById("select-lpt-ma");
+      select.innerHTML = "";
+      cachedVehicleTypes.forEach((t) => {
+        const opt = document.createElement("option");
+        opt.value = t.lpt_ma;
+        opt.textContent = `${t.lpt_ten} (${t.lpt_ma})`;
+        select.appendChild(opt);
+      });
+    } catch (e) {
+      console.error("Lỗi khi tải danh mục loại xe:", e);
+    }
+  }
+
+  async function loadVehicles() {
+    const container = document.getElementById("vehicle-list-container");
+    const badge = document.getElementById("vehicle-count-badge");
+
+    try {
+      const res = await fetch("/api/auth/vehicles");
+      if (!res.ok) throw new Error("Không thể tải phương tiện");
+
+      const list = await res.json();
+      badge.textContent = `${list.length} xe`;
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full flex flex-col items-center justify-center p-8 border-2 border-dashed border-outline-variant/50 rounded-2xl text-center bg-surface-container-lowest">
+            <span class="material-symbols-outlined text-5xl text-secondary mb-2">directions_car</span>
+            <p class="font-bold text-on-surface">Chưa có phương tiện nào được đăng ký</p>
+            <p class="text-xs text-secondary mt-1 max-w-sm">Bấm "Thêm xe mới" để thêm biển số và tên xe của bạn phục vụ nhanh khi đổ xăng.</p>
+            <button type="button" onclick="openAddVehicleModal()" class="btn-primary mt-4 py-2 px-4 text-xs font-bold rounded-xl flex items-center gap-1 shadow-sm">
+              <span class="material-symbols-outlined text-base">add</span>
+              Thêm xe đầu tiên
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = "";
+      list.forEach((v) => {
+        const typeInfo = getVehicleTypeStyle(v.lpt_ma, v.lpt_ten);
+
+        const card = document.createElement("div");
+        card.className = "group relative p-4 rounded-2xl border border-outline-variant/30 bg-surface hover:shadow-md hover:border-primary/50 transition-all flex flex-col justify-between";
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <div class="w-10 h-10 rounded-xl ${typeInfo.iconBg} ${typeInfo.iconColor} flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-xl">${typeInfo.icon}</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-on-surface text-sm line-clamp-1">${v.pt_ten}</h4>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${typeInfo.badgeClass}">
+                  ${v.lpt_ten}
+                </span>
+              </div>
+            </div>
+            <button type="button" onclick="confirmDeleteVehicle('${v.pt_bienso}')" title="Xóa phương tiện" class="text-secondary hover:text-error transition-colors p-1 rounded-lg hover:bg-error/10">
+              <span class="material-symbols-outlined text-lg">delete</span>
+            </button>
+          </div>
+
+          <!-- Biển số xe mô phỏng dập nổi -->
+          <div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between">
+            <span class="text-[11px] text-secondary font-medium">Biển số:</span>
+            <div class="px-3 py-1 rounded bg-white border border-slate-700 shadow-sm font-mono font-black text-slate-900 tracking-wider text-sm flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+              <span>${v.pt_bienso}</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+    } catch (e) {
+      console.error(e);
+      container.innerHTML = `
+        <div class="col-span-full text-center py-6 text-error">
+          <p class="text-sm">Không thể tải danh sách xe. Vui lòng tải lại trang.</p>
+        </div>
+      `;
+    }
+  }
+
+  function getVehicleTypeStyle(lpt_ma, lpt_ten) {
+    const code = (lpt_ma || "").trim().toUpperCase();
+    const name = (lpt_ten || "").toLowerCase();
+
+    if (code === "LPT00001" || name.includes("máy")) {
+      return {
+        icon: "two_wheeler",
+        iconBg: "bg-emerald-500/10",
+        iconColor: "text-emerald-600",
+        badgeClass: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+      };
+    } else if (code === "LPT00003" || name.includes("tải")) {
+      return {
+        icon: "local_shipping",
+        iconBg: "bg-amber-500/10",
+        iconColor: "text-amber-600",
+        badgeClass: "bg-amber-100 text-amber-800 border border-amber-200",
+      };
+    } else {
+      return {
+        icon: "directions_car",
+        iconBg: "bg-blue-500/10",
+        iconColor: "text-blue-600",
+        badgeClass: "bg-blue-100 text-blue-800 border border-blue-200",
+      };
+    }
+  }
+
+  // ==========================================================
+  // THÊM PHƯƠNG TIỆN
+  // ==========================================================
+  function openAddVehicleModal() {
+    const modal = document.getElementById("modal-add-vehicle");
+    const content = document.getElementById("modal-vehicle-content");
+    document.getElementById("add-vehicle-form").reset();
+    document.getElementById("plate-preview-badge").textContent = "65A-XXXXX";
+
+    modal.classList.remove("hidden");
+    setTimeout(() => {
+      modal.classList.remove("opacity-0");
+      content.classList.remove("scale-95");
+      content.classList.add("scale-100");
+    }, 10);
+    document.getElementById("input-pt-bienso").focus();
+  }
+
+  function closeAddVehicleModal() {
+    const modal = document.getElementById("modal-add-vehicle");
+    const content = document.getElementById("modal-vehicle-content");
+    modal.classList.add("opacity-0");
+    content.classList.remove("scale-100");
+    content.classList.add("scale-95");
+    setTimeout(() => {
+      modal.classList.add("hidden");
+    }, 250);
+  }
+
+  async function submitAddVehicle() {
+    const btn = document.getElementById("btn-submit-vehicle");
+    const pt_bienso = document.getElementById("input-pt-bienso").value.trim().toUpperCase();
+    const pt_ten = document.getElementById("input-pt-ten").value.trim();
+    const lpt_ma = document.getElementById("select-lpt-ma").value;
+
+    if (!pt_bienso || !pt_ten || !lpt_ma) {
+      showToast("Lỗi nhập liệu", "Vui lòng nhập đầy đủ biển số, tên xe và loại xe", true);
+      return;
+    }
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-base">progress_activity</span> Đang lưu...`;
+
+      const res = await fetch("/api/auth/vehicles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pt_bienso, pt_ten, lpt_ma }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Không thể thêm xe mới");
+      }
+
+      showToast("Thành công", data.message || `Đã thêm phương tiện ${pt_bienso}`);
+      closeAddVehicleModal();
+      await loadVehicles();
+
+    } catch (err) {
+      showToast("Lỗi", err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span class="material-symbols-outlined text-base">check</span> <span>Xác nhận thêm xe</span>`;
+    }
+  }
+
+  // ==========================================================
+  // XÓA PHƯƠNG TIỆN
+  // ==========================================================
+  async function confirmDeleteVehicle(plate) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa phương tiện biển số "${plate}" khỏi tài khoản không?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/auth/vehicles/${encodeURIComponent(plate)}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Không thể xóa phương tiện");
+      }
+
+      showToast("Đã xóa", data.message || `Đã xóa phương tiện ${plate}`);
+      await loadVehicles();
+
+    } catch (err) {
+      showToast("Lỗi xóa xe", err.message, true);
+    }
+  }
+</script>
+{% endblock %}

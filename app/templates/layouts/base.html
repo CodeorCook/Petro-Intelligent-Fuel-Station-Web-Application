@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <script src="/static/js/html_escape.js"></script>
+  <script src="/static/js/order_readiness.js"></script>
+  <script src="/static/js/request_lifecycle.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Petro - Hệ thống Tìm trạm xăng & Thanh toán{% endblock %}</title>
+
+  <!-- Tailwind CSS & Plugins -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#006c49",
+            "primary-container": "#10b981",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#00422b",
+            "secondary": "#545f73",
+            "secondary-container": "#d5e0f8",
+            "on-secondary": "#ffffff",
+            "tertiary": "#855300",
+            "tertiary-container": "#e29100",
+            "background": "#f8f9ff",
+            "on-background": "#0b1c30",
+            "surface": "#f8f9ff",
+            "on-surface": "#0b1c30",
+            "surface-variant": "#d3e4fe",
+            "on-surface-variant": "#3c4a42",
+            "surface-container": "#e5eeff",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#eff4ff",
+            "surface-container-high": "#dce9ff",
+            "surface-container-highest": "#d3e4fe",
+            "outline": "#6c7a71",
+            "outline-variant": "#bbcabf",
+            "error": "#ba1a1a",
+            "error-container": "#ffdad6"
+          },
+          fontFamily: {
+            "body-md": ["Be Vietnam Pro", "sans-serif"],
+            "headline-md": ["Be Vietnam Pro", "sans-serif"],
+            "display-lg": ["Be Vietnam Pro", "sans-serif"]
+          },
+          spacing: {
+            "xs": "4px",
+            "sm": "8px",
+            "md": "16px",
+            "lg": "24px",
+            "xl": "32px",
+            "base": "8px",
+            "container-margin": "16px"
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Global Custom Design System -->
+  <link rel="stylesheet" href="/static/css/global.css">
+
+  <script src="/static/js/travel_format.js"></script>
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col antialiased custom-scrollbar">
+
+  <!-- Header Component -->
+  {% include "components/header.html" %}
+
+  <!-- Main Dynamic Content -->
+  <!-- [Ghi chú] Code gốc: <main class="flex-grow w-full"> -->
+  <main class="flex-grow w-full pb-16 md:pb-0">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Mobile Bottom Navigation Bar: Dành cho tài xế thao tác một tay trên điện thoại -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-container-lowest border-t border-surface-container-high shadow-lg px-2 py-1.5 flex justify-around items-center" id="mobile-bottom-nav">
+    <a href="/" class="mobile-nav-link flex flex-col items-center gap-0.5 text-secondary hover:text-primary transition-colors py-1 px-2" data-path="/">
+      <span class="material-symbols-outlined text-[22px]">home</span>
+      <span class="text-[10px] font-bold">Trang chủ</span>
+    </a>
+    <a href="/BanDo.html" class="mobile-nav-link flex flex-col items-center gap-0.5 text-secondary hover:text-primary transition-colors py-1 px-2" data-path="/BanDo.html">
+      <span class="material-symbols-outlined text-[22px]">explore</span>
+      <span class="text-[10px] font-bold">Bản đồ</span>
+    </a>
+    <a href="/ThanhToan.html" id="mobile-nav-datxang" class="hidden mobile-nav-link flex flex-col items-center gap-0.5 text-secondary hover:text-primary transition-colors py-1 px-2" data-path="/ThanhToan.html">
+      <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center -mt-3 shadow-md border-2 border-white">
+        <span class="material-symbols-outlined text-[18px]">local_gas_station</span>
+      </div>
+      <span class="text-[10px] font-bold text-primary">Đặt xăng</span>
+    </a>
+    <a href="/GiaXangDau.html" class="mobile-nav-link flex flex-col items-center gap-0.5 text-secondary hover:text-primary transition-colors py-1 px-2" data-path="/GiaXangDau.html">
+      <span class="material-symbols-outlined text-[22px]">price_change</span>
+      <span class="text-[10px] font-bold">Giá xăng</span>
+    </a>
+    <a href="/TaiKhoan.html" class="mobile-nav-link flex flex-col items-center gap-0.5 text-secondary hover:text-primary transition-colors py-1 px-2" data-path="/TaiKhoan.html">
+      <span class="material-symbols-outlined text-[22px]">account_circle</span>
+      <span class="text-[10px] font-bold">Tài khoản</span>
+    </a>
+  </nav>
+
+  <!-- Script đồng bộ active tab cho Mobile Bottom Bar -->
+  <script>
+    (function() {
+      const p = window.location.pathname;
+      document.querySelectorAll('.mobile-nav-link').forEach(el => {
+        const linkPath = el.getAttribute('data-path');
+        if (p === linkPath || (linkPath === '/' && (p === '' || p === '/TrangChu.html'))) {
+          el.classList.remove('text-secondary');
+          el.classList.add('text-primary');
+        }
+      });
+    })();
+  </script>
+
+  <!-- Footer Component -->
+  {% include "components/footer.html" %}
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

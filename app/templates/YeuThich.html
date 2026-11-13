@@ -1,0 +1,27 @@
+{% extends "layouts/base.html" %}
+{% block title %}Trạm xăng yêu thích - Petro{% endblock %}
+{% block content %}
+<main class="flex-grow max-w-7xl mx-auto w-full px-gutter md:px-lg py-lg md:py-xl">
+  <header class="mb-lg">
+    <h1 class="text-display-lg font-bold text-on-background mb-sm">Trạm xăng yêu thích</h1>
+    <p class="text-body-lg text-secondary">Chưa có danh sách yêu thích được lưu trong hệ thống.</p>
+  </header>
+  <div class="card-base p-lg text-secondary">
+    <p>Tính năng lưu trạm yêu thích chưa được triển khai. Bạn có thể tìm các trạm đã được duyệt trên bản đồ.</p>
+    <a href="/BanDo.html" class="btn-primary inline-flex mt-md">Mở bản đồ</a>
+  </div>
+</main>
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      const uRes = await fetch("/api/auth/me");
+      if (uRes.ok) {
+        const u = await uRes.json();
+        if (u.role === "DOANH_NGHIEP") {
+          window.location.replace("/QuanLyTram.html");
+        }
+      }
+    } catch (_) {}
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Chi tiết trạm xăng - Petro{% endblock %}
+
+{% block head_extra %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="/static/css/basemaps.css?v=5.3.1">
+<style>
+  #detail-map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background-color: #f1f5f9;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="max-w-7xl mx-auto px-container-margin py-lg grid grid-cols-1 md:grid-cols-12 gap-lg">
+  <!-- Left Column: Details -->
+  <div class="md:col-span-5 space-y-md">
+    <!-- Station Header Card -->
+    <div class="card-base p-md">
+      <div class="flex justify-between items-start mb-sm">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span id="st-brand-badge" class="px-2 py-0.5 rounded text-[11px] font-bold text-white bg-primary">Petro</span>
+            <span class="text-xs text-secondary font-mono" id="st-code">TX000001</span>
+          </div>
+          <h1 id="st-name" class="text-headline-md font-bold text-on-surface">Đang tải tên trạm...</h1>
+          <p id="st-address" class="text-body-md text-secondary mt-xs">Đang tải địa chỉ...</p>
+        </div>
+        <button class="text-primary hover:scale-110 transition-transform p-2" title="Thêm vào yêu thích">
+          <span class="material-symbols-outlined text-[24px]">favorite_border</span>
+        </button>
+      </div>
+      <div class="flex items-center gap-md mb-md">
+        <div class="flex items-center gap-xs text-secondary text-label-md">
+          <span class="material-symbols-outlined text-sm">route</span> <span id="st-distance">-- km</span>
+        </div>
+        <div class="flex items-center gap-xs text-secondary text-label-md">
+          <span class="material-symbols-outlined text-sm">schedule</span> <span id="st-minutes">-- phút</span>
+        </div>
+        <div class="flex items-center gap-xs text-tertiary-container text-label-md font-bold">
+          <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span> <span id="st-rating">Đang tải đánh giá...</span>
+        </div>
+      </div>
+      <div class="inline-flex items-center gap-xs bg-surface-container-low text-primary-container px-3 py-1 rounded-full text-label-md border border-primary-container/20 font-medium">
+        <span class="material-symbols-outlined text-sm">storefront</span> Chưa có dữ liệu giờ mở cửa
+      </div>
+    </div>
+
+    <!-- Fuel Prices Box -->
+    <div class="card-base p-md">
+      <h2 class="text-title-lg font-bold text-on-surface mb-md">Bảng giá nhiên liệu hôm nay</h2>
+      <div id="st-fuel-list" class="space-y-sm">
+        <div class="p-3 bg-surface rounded-lg text-center text-secondary text-sm">Đang tải bảng giá...</div>
+      </div>
+    </div>
+
+    <!-- Services Box -->
+    <div class="card-base p-md">
+      <h2 class="text-title-lg font-bold text-on-surface mb-sm">Tiện ích tại trạm</h2>
+      <div id="st-services-list" class="flex flex-wrap gap-2">
+        <span class="px-2.5 py-1 rounded-lg bg-surface-container-low text-secondary text-xs">Đang tải tiện ích...</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-md pt-sm">
+      <a id="btn-directions" href="/ChiDuong.html" class="btn-primary flex-1 py-3 text-center">
+        <span class="material-symbols-outlined">directions</span> Chỉ đường
+      </a>
+      <a id="btn-pay-station" href="/ThanhToan.html" class="btn-secondary flex-1 py-3 text-center">
+        <span class="material-symbols-outlined">payment</span> Đặt xăng / Thanh toán
+      </a>
+    </div>
+  </div>
+
+  <!-- Right Column: Interactive Mini Map -->
+  <div class="md:col-span-7 h-[550px] card-base overflow-hidden relative shadow-md">
+    <div id="detail-map"></div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/basemaps.js?v=5.3.1"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    let tx_ma = urlParams.get("tx_ma") || "TX000001";
+
+    let lat = 10.0298, lng = 105.7765;
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 }));
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
+      } catch (e) {}
+    }
+
+    try {
+      const res = await fetch(`/api/map/stations/${tx_ma}?lat=${lat}&lng=${lng}`);
+      if (!res.ok) throw new Error("Trạm không còn công khai hoặc thông tin tạm thời không khả dụng.");
+      const data = await res.json();
+      if (data.status === "success") {
+        const st = data.station;
+        document.getElementById("st-code").textContent = st.tx_ma;
+        document.getElementById("st-name").textContent = st.tx_ten;
+        document.getElementById("st-address").textContent = st.tx_diachi;
+        document.getElementById("st-distance").textContent = PetroTravelFormat.straight(st.straight_line_distance_km);
+        document.getElementById("st-minutes").textContent = "Xem chỉ đường để có ETA";
+        document.getElementById("st-rating").textContent = st.rating == null ? "Chưa có đánh giá" : `${st.rating} (${st.review_count} đánh giá)`;
+        document.getElementById("st-brand-badge").textContent = st.brand || "Chưa xác định";
+        document.getElementById("st-brand-badge").style.backgroundColor = st.brand_color || "#006c49";
+        document.getElementById("btn-directions").href = `/ChiDuong.html?tx_ma=${st.tx_ma}`;
+        document.getElementById("btn-pay-station").href = `/ThanhToan.html?tx_ma=${st.tx_ma}`;
+
+        // Fuel list
+        if (st.fuels && st.fuels.length > 0) {
+          document.getElementById("st-fuel-list").innerHTML = st.fuels.map(f => `
+            <div class="flex justify-between items-center p-sm bg-surface rounded-lg border border-surface-container">
+              <div class="text-body-md text-on-surface font-semibold">${petroEscapeHtml(f.name)}</div>
+              <div class="text-body-md text-primary font-bold">${f.price.toLocaleString("vi-VN")} đ/L</div>
+            </div>
+          `).join("");
+        } else {
+          document.getElementById("st-fuel-list").textContent = "Trạm chưa cấu hình bảng giá nhiên liệu.";
+          document.getElementById("btn-pay-station").removeAttribute("href");
+        }
+
+        // Services
+        if (st.services && st.services.length > 0) {
+          document.getElementById("st-services-list").innerHTML = st.services.map(s => `
+            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-surface-container-low text-secondary text-xs font-medium border border-outline-variant/40">
+              <span class="material-symbols-outlined text-[14px]">check_circle</span> ${petroEscapeHtml(s)}
+            </span>
+          `).join("");
+        } else {
+          document.getElementById("st-services-list").textContent = "Trạm chưa cấu hình tiện ích.";
+        }
+
+        // Initialize Map centered on this station
+        const map = L.map("detail-map").setView([st.lat, st.lng], 15);
+        PetroBasemaps.attach(map);
+
+        L.marker([st.lat, st.lng], {
+          icon: L.divIcon({
+            className: "station-detail-pin",
+            html: `
+              <div class="w-10 h-10 rounded-full text-white flex items-center justify-center shadow-xl border-2 border-white" style="background-color: ${st.brand_color || '#006c49'};">
+                <span class="material-symbols-outlined text-[22px]">local_gas_station</span>
+              </div>
+            `,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+          })
+        }).addTo(map).bindPopup(`<b>${petroEscapeHtml(st.tx_ten)}</b><br>${petroEscapeHtml(st.tx_diachi)}`).openPopup();
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải chi tiết trạm:", err);
+      document.getElementById("st-name").textContent = "Thông tin trạm không khả dụng";
+      document.getElementById("st-address").textContent = "Trạm không còn công khai hoặc không thể tải thông tin lúc này.";
+      for (const id of ["btn-directions", "btn-pay-station"]) document.getElementById(id).removeAttribute("href");
+    }
+  });
+</script>
+{% endblock %}

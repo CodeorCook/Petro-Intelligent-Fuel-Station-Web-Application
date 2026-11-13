@@ -1,0 +1,147 @@
+/* Global Design System & Stylesheet for Petro App */
+
+/* 1. Google Fonts & Icon Set */
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+/* 2. Color Variables & Design Tokens */
+:root {
+  --color-primary: #006c49;
+  --color-primary-container: #10b981;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #00422b;
+  
+  --color-secondary: #545f73;
+  --color-secondary-container: #d5e0f8;
+  --color-on-secondary: #ffffff;
+  
+  --color-tertiary: #855300;
+  --color-tertiary-container: #e29100;
+  
+  --color-surface: #f8f9ff;
+  --color-surface-container: #e5eeff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eff4ff;
+  --color-surface-container-high: #dce9ff;
+  
+  --color-on-surface: #0b1c30;
+  --color-on-surface-variant: #3c4a42;
+  --color-outline: #6c7a71;
+  --color-outline-variant: #bbcabf;
+  --color-error: #ba1a1a;
+
+  --font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+/* 3. Base Styles */
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+/* 4. Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 5. Reusable UI Component Utilities */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-on-primary-container);
+  box-shadow: 0 4px 12px rgba(0, 108, 73, 0.2);
+}
+
+.btn-secondary {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface-variant);
+  font-weight: 500;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-surface-container);
+  color: var(--color-primary);
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  border-radius: 9999px;
+  color: var(--color-on-surface-variant);
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-icon:hover {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-primary-container);
+}
+
+.card-base {
+  background-color: var(--color-surface-container-lowest);
+  border-radius: 1rem;
+  border: 1px solid var(--color-surface-container-high);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.input-base {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-outline-variant);
+  background-color: var(--color-surface-container-lowest);
+  color: var(--color-on-surface);
+  transition: border-color 0.2s ease;
+}
+
+.input-base:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 108, 73, 0.15);
+}
+
+/* 6. Leaflet Map & Tailwind CSS Conflict Resolution */
+.leaflet-pane img,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}

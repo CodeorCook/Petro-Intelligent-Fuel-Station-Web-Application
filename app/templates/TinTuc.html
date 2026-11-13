@@ -1,0 +1,79 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Tin tức thị trường - Petro{% endblock %}
+
+{% block content %}
+<main class="max-w-7xl mx-auto px-container-margin md:px-xl py-xl space-y-xl">
+  <!-- Header Section -->
+  <div class="space-y-md">
+    <div>
+      <h1 class="text-display-lg font-bold text-on-surface">Tin tức mới nhất</h1>
+      <p class="text-body-lg text-on-surface-variant mt-2">Cập nhật thông tin thị trường xăng dầu và ưu đãi dịch vụ</p>
+    </div>
+  </div>
+
+  <!-- Categories -->
+  <section class="overflow-x-auto pb-2 custom-scrollbar">
+    <div class="flex gap-sm whitespace-nowrap min-w-max">
+      <button class="px-6 py-2 rounded-full bg-primary text-on-primary font-bold shadow-sm">Tất cả</button>
+      <button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-secondary-container transition-colors font-medium border border-outline-variant">Giá xăng</button>
+      <button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-secondary-container transition-colors font-medium border border-outline-variant">Thị trường</button>
+      <button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-secondary-container transition-colors font-medium border border-outline-variant">Nhiên liệu</button>
+      <button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant hover:bg-secondary-container transition-colors font-medium border border-outline-variant">Khuyến mãi</button>
+    </div>
+  </section>
+
+  <!-- Featured News Section -->
+  <section class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+    <a href="/ChiTietTinTuc.html" class="md:col-span-12 group cursor-pointer card-base overflow-hidden hover:shadow-lg transition-shadow duration-300">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-0">
+        <div class="relative h-64 md:h-full min-h-[300px]">
+          <div class="bg-cover bg-center w-full h-full absolute inset-0 group-hover:scale-105 transition-transform duration-500" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAmxnP5DUKqgOrbZDUANq9o2j35VmlYt8KWctkBpe0CVqZPklLhVoLZ2bR7aWWYjxdHZ0bZQY1f_LkZeOMGnZ0WdPDTgd6ngIeRmf57JYlk6vZXsHCLeVPENSP-wOZvFn18LSyiD_5n2ZueGEQ871P0M7FncIk01yUeaz3Shka-pyCX8k-Lp35yGMZuvvNBQSXk531loTHnpmVOuQ087WrAIL1pyexYpF4jfHxXd74W0Q6tEJungWvHuQ');"></div>
+        </div>
+        <div class="p-lg md:p-xl flex flex-col justify-center bg-surface-container-low">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-md font-bold">Thị trường</span>
+            <span class="text-on-surface-variant text-body-md">24/10/2023</span>
+          </div>
+          <h2 class="text-headline-md md:text-[32px] md:leading-[40px] font-bold text-on-surface mb-4 group-hover:text-primary transition-colors">Giá xăng dầu thế giới tăng mạnh, tác động thế nào đến thị trường Việt Nam?</h2>
+          <p class="text-body-lg text-on-surface-variant mb-6 line-clamp-3">Thị trường dầu mỏ toàn cầu đang chứng kiến những biến động lớn. Các chuyên gia dự báo giá xăng trong nước có thể điều chỉnh trong kỳ sắp tới.</p>
+          <div class="mt-auto">
+            <span class="flex items-center gap-2 text-primary font-bold">
+              Đọc bài viết <span class="material-symbols-outlined">arrow_forward</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </a>
+  </section>
+
+  <!-- News Grid -->
+  <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+    <!-- Card 1 -->
+    <a href="/ChiTietTinTuc.html" class="card-base p-lg flex flex-col h-full hover:shadow-md transition-shadow group cursor-pointer">
+      <div class="flex items-center justify-between mb-md">
+        <span class="px-2 py-1 bg-surface-container-highest text-on-surface-variant rounded-md text-label-md font-medium">Giá xăng</span>
+        <span class="text-on-surface-variant text-body-md">22/10/2023</span>
+      </div>
+      <h3 class="text-title-lg font-bold text-on-surface mb-sm group-hover:text-primary transition-colors line-clamp-2">Dự báo giá xăng dầu kỳ điều hành ngày 21/11</h3>
+      <p class="text-body-md text-on-surface-variant mb-lg line-clamp-3 flex-grow">Nhiều dự báo cho thấy giá xăng E5 RON92 và RON95 có thể giảm nhẹ sau chuỗi ngày tăng nóng.</p>
+      <div class="mt-auto pt-sm border-t border-surface-container-highest">
+        <span class="text-primary font-bold flex items-center gap-1 group-hover:underline">Đọc thêm <span class="material-symbols-outlined text-[16px]">chevron_right</span></span>
+      </div>
+    </a>
+
+    <!-- Card 2 -->
+    <a href="/ChiTietTinTuc.html" class="card-base p-lg flex flex-col h-full hover:shadow-md transition-shadow group cursor-pointer">
+      <div class="flex items-center justify-between mb-md">
+        <span class="px-2 py-1 bg-tertiary-container text-on-tertiary rounded-md text-label-md font-bold">Khuyến mãi</span>
+        <span class="text-on-surface-variant text-body-md">21/10/2023</span>
+      </div>
+      <h3 class="text-title-lg font-bold text-on-surface mb-sm group-hover:text-tertiary transition-colors line-clamp-2">Ưu đãi hoàn tiền 5% khi thanh toán qua Petro App</h3>
+      <p class="text-body-md text-on-surface-variant mb-lg line-clamp-3 flex-grow">Người dùng Petro App sẽ được hoàn tiền trực tiếp khi thanh toán tại các trạm xăng liên kết.</p>
+      <div class="mt-auto pt-sm border-t border-surface-container-highest">
+        <span class="text-tertiary font-bold flex items-center gap-1 group-hover:underline">Đọc thêm <span class="material-symbols-outlined text-[16px]">chevron_right</span></span>
+      </div>
+    </a>
+  </section>
+</main>
+{% endblock %}

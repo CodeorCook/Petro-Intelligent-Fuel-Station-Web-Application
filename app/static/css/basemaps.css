@@ -1,0 +1,44 @@
+/* Keep provider credits visible, including on narrow Safari/WebView screens. */
+.leaflet-container .leaflet-control-attribution {
+  max-width: min(65vw, 420px); white-space: normal; line-height: 1.25;
+  background: rgba(255,255,255,.94); padding: 3px 5px;
+}
+.leaflet-pane img.leaflet-tile { max-width: none !important; max-height: none !important; }
+.petro-basemap-control {
+  position: relative; width: 44px; color: #0b1c30; font: 13px/1.4 sans-serif;
+}
+.petro-basemap-control [hidden] { display: none !important; }
+.petro-basemap-control button { min-height: 44px; cursor: pointer; color: inherit; }
+.petro-basemap-control button:focus-visible { outline: 3px solid #006c49; outline-offset: 2px; }
+.petro-basemap-toggle {
+  display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 6px #0002;
+}
+.petro-basemap-toggle .material-symbols-outlined { font-size: 22px; }
+.petro-basemap-toggle[aria-expanded="true"] { color: #006c49; background: #ecfdf5; }
+.petro-basemap-popover, .petro-basemap-notice {
+  position: absolute; bottom: 52px; left: 0; width: min(252px, calc(100vw - 32px));
+  padding: 8px; border: 1px solid #e2e8f0; border-radius: 12px;
+  background: #fff; box-shadow: 0 4px 18px #0003; max-height: 260px; overflow-y: auto;
+}
+.petro-basemap-heading { font-weight: 700; padding: 2px 8px 6px; margin: 0; }
+.petro-basemap-choice { display: flex; align-items: center; justify-content: space-between; width: 100%; text-align: left; padding: 8px; border-radius: 8px; gap: 8px; }
+.petro-basemap-choice[aria-pressed="true"] { color: #006c49; background: #ecfdf5; font-weight: 700; }
+.petro-basemap-choice:hover { background: #f1f5f9; }
+.petro-basemap-debug { font-size: 12px; margin: 4px 8px; }
+.petro-basemap-notice { font-size: 12px; }
+.petro-basemap-notice button, .petro-basemap-popover > button:not(.petro-basemap-choice) { padding: 6px 8px; text-decoration: underline; }
+.petro-map-layout { height: calc(100vh - 65px); height: calc(100dvh - 65px); min-height: 420px; }
+.petro-map-layout > section { min-width: 0; min-height: 0; }
+#petro-map .leaflet-bottom.leaflet-left { bottom: 84px; }
+.petro-map-layout .btn-find-nearest { bottom: 48px; }
+@media (max-width: 767px) {
+  .petro-map-layout > aside { height: 60%; flex-shrink: 0; }
+  .petro-map-layout > section { height: auto; flex: 1 1 40%; }
+  .petro-map-layout .btn-find-nearest {
+    left: auto; right: 10px; bottom: 56px; transform: none;
+    width: min(170px, 44vw); padding: 8px; font-size: 12px; min-height: 44px;
+  }
+  .leaflet-container .leaflet-control-attribution { max-width: 55vw; font-size: 10px; }
+  #route-map .leaflet-bottom.leaflet-left { margin-bottom: env(safe-area-inset-bottom, 0px); }
+}

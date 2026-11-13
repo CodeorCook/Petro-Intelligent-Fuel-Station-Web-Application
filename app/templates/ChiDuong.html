@@ -1,0 +1,475 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Chỉ đường tới trạm xăng - Petro{% endblock %}
+
+{% block head_extra %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="/static/css/basemaps.css?v=5.3.1">
+<link rel="stylesheet" href="/static/css/navigation.css?v=5.9.3">
+{% endblock %}
+
+{% block content %}
+<main class="petro-map-layout petro-navigation-layout flex-grow flex flex-col md:flex-row overflow-hidden">
+  <!-- Left Panel: Route Info (40%) -->
+  <aside id="nav-route-info"
+    class="w-full md:w-[40%] bg-surface flex flex-col border-r border-surface-container-high z-10 shadow-lg h-1/2 md:h-full overflow-y-auto shrink-0">
+    <div class="p-lg flex flex-col min-h-full space-y-md">
+      <!-- Header -->
+      <div class="flex items-center">
+        <a id="route-back-map" href="/BanDo.html"
+          class="mr-sm text-on-surface-variant hover:text-primary transition-colors">
+          <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+        </a>
+        <h1 class="text-title-lg font-bold text-on-surface">Chỉ đường tới trạm xăng</h1>
+      </div>
+      <button id="nav-hide-info" type="button" class="petro-info-toggle" aria-controls="nav-route-info"
+        aria-expanded="true">Ẩn thông tin</button>
+
+      <!-- Route Card -->
+      <div class="bg-surface-container-low rounded-xl p-md shadow-sm border border-surface-container-highest">
+        <div class="flex items-start">
+          <div class="flex flex-col items-center mr-md mt-sm space-y-1">
+            <span class="material-symbols-outlined text-[16px] text-primary">my_location</span>
+            <div class="w-px h-8 bg-outline-variant"></div>
+            <span class="material-symbols-outlined text-[16px] text-red-600"
+              style="font-variation-settings: 'FILL' 1;">pin_drop</span>
+          </div>
+          <div class="flex-1 space-y-sm">
+            <div class="bg-surface rounded-lg px-sm py-2 border border-outline-variant">
+              <span class="text-xs text-secondary block">Điểm xuất phát</span>
+              <span id="start-point-label" class="text-body-md text-on-surface font-medium">Vị trí hiện tại của
+                bạn</span>
+            </div>
+            <div class="bg-surface rounded-lg px-sm py-2 border border-outline-variant">
+              <span class="text-xs text-secondary block">Trạm xăng đích đến</span>
+              <span id="dest-station-name" class="text-body-md text-primary font-bold">Đang tải trạm...</span>
+              <p id="dest-station-addr" class="text-xs text-secondary mt-0.5"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Comparison -->
+      <h2 class="text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Thông tin lộ trình</h2>
+      <div class="overflow-hidden rounded-xl border border-surface-container-highest bg-surface-container-low">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr
+              class="bg-surface-container text-label-md text-on-surface-variant border-b border-surface-container-highest">
+              <th class="p-2.5 font-semibold">Tuyến</th>
+              <th class="p-2.5 font-semibold">Khoảng cách</th>
+              <th class="p-2.5 font-semibold">Thời gian</th>
+              <th class="p-2.5 font-semibold">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody class="text-body-md">
+            <tr class="border-b border-surface-container-highest bg-emerald-50/40">
+              <td class="p-2.5 font-bold text-primary">Tuyến chính</td>
+              <td id="route-dist-text" class="p-2.5 font-semibold">-- km</td>
+              <td id="route-dur-text" class="p-2.5 font-semibold">-- phút</td>
+              <td class="p-2.5"><span
+                  class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded-full text-[10px] font-bold">Đề
+                  xuất</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Turn-by-turn Navigation Instruction Box -->
+      <div
+        class="bg-surface-container-low rounded-xl p-md border border-surface-container-highest flex items-center gap-3">
+        <div class="bg-primary text-white p-2.5 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+          <span class="material-symbols-outlined text-[28px]">turn_right</span>
+        </div>
+        <div>
+          <div id="nav-next-step" class="text-sm font-bold text-on-surface">Lộ trình đề xuất đến trạm xăng</div>
+          <div class="text-xs text-secondary mt-0.5">Đang hiển thị lộ trình đề xuất.</div>
+        </div>
+      </div>
+
+      <!-- [Ghi chú] Code gốc khối điều khiển thử nghiệm (giữ lại theo yêu cầu):
+      <section class="rounded-xl border p-3 space-y-2" aria-label="Dẫn đường thử nghiệm">
+        <p legacy_field="nav-gps-status" class="text-xs" role="status">Chưa bắt đầu theo dõi GPS.</p>
+        <p legacy_field="nav-distance" class="font-semibold text-sm">Khoảng cách đến thao tác tiếp theo: —</p>
+        <p legacy_field="nav-road-name" class="text-xs"></p>
+        <p legacy_field="nav-voice-status" class="text-xs" role="status"></p>
+        <label class="flex items-center gap-2 text-sm"><input legacy_field="nav-voice-enabled" type="checkbox" checked> Bật giọng tiếng Việt</label>
+        <button legacy_field="nav-voice-test" type="button" class="petro-nav-button btn-secondary p-2" aria-describedby="nav-voice-status">Thử giọng tiếng Việt</button>
+        <p class="text-xs text-secondary">Bấm thử giọng trực tiếp trước khi dẫn đường. Bật checkbox chưa có nghĩa là trình duyệt đã phát âm thanh.</p>
+        <details class="text-xs"><summary>Chẩn đoán giọng nói</summary><p legacy_field="nav-voice-diagnostics" role="status" class="break-words"></p></details>
+        <div class="flex gap-2">
+          <button legacy_field="nav-stop" type="button" class="petro-nav-button btn-secondary p-2" disabled>Dừng dẫn đường</button>
+          <button legacy_field="nav-repeat" type="button" class="btn-secondary p-2" disabled>Đọc lại hướng dẫn</button>
+        </div>
+        <p class="text-xs text-secondary">Trợ lý dẫn đường thử nghiệm, cần GPS thực và giọng tiếng Việt trên thiết bị. Không thay thế biển báo giao thông hoặc phán đoán của người lái.</p>
+        <a legacy_field="station-workflow-link" href="/BanDo.html" class="text-sm text-primary underline">Tiếp tục đặt xăng tại trạm</a>
+      </section>
+      -->
+      <section class="rounded-2xl border border-outline-variant/40 bg-surface-container-low/60 p-4 space-y-3 shadow-sm"
+        aria-label="Dẫn đường thử nghiệm">
+        <!-- Header trợ lý giọng nói -->
+        <div class="flex items-center justify-between pb-2 border-b border-outline-variant/30">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[20px]">record_voice_over</span>
+            <span class="font-bold text-sm text-on-surface">Chỉ dẫn giọng nói tiếng Việt</span>
+          </div>
+          <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer text-secondary">
+            <input id="nav-voice-enabled" type="checkbox" checked
+              class="w-4 h-4 rounded text-primary focus:ring-primary">
+            Bật giọng
+          </label>
+        </div>
+
+        <!-- Trạng thái GPS & Chỉ dẫn kế tiếp -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-xs">
+            <span id="nav-gps-status" class="text-secondary flex items-center gap-1.5" role="status">
+              <span class="w-2 h-2 rounded-full bg-slate-400"></span> Chưa bắt đầu theo dõi GPS.
+            </span>
+            <span id="nav-distance" class="font-bold text-primary">Khoảng cách: —</span>
+          </div>
+          <p id="nav-road-name" class="text-xs text-secondary font-medium"></p>
+          <p id="nav-voice-status" class="text-xs text-secondary italic" role="status"></p>
+        </div>
+
+        <!-- Các nút thao tác giọng nói & dẫn đường -->
+        <div class="flex flex-wrap gap-2 pt-1">
+          <button id="nav-voice-test" type="button"
+            class="petro-nav-button btn-secondary flex-1 py-2 px-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-sm"
+            aria-describedby="nav-voice-status">
+            <span class="material-symbols-outlined text-[16px]">volume_up</span>
+            Thử giọng
+          </button>
+          <button id="nav-repeat" type="button"
+            class="btn-secondary flex-1 py-2 px-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-sm"
+            disabled>
+            <span class="material-symbols-outlined text-[16px]">replay</span>
+            Đọc lại
+          </button>
+          <button id="nav-stop" type="button"
+            class="petro-nav-button btn-secondary flex-1 py-2 px-2.5 text-xs font-bold rounded-xl text-error border-error/30 hover:bg-error/10 flex items-center justify-center gap-1 shadow-sm"
+            disabled>
+            <span class="material-symbols-outlined text-[16px]">stop</span>
+            Dừng
+          </button>
+        </div>
+
+        <!-- Chẩn đoán kỹ thuật thu gọn -->
+        <details class="text-[11px] text-outline pt-1">
+          <summary class="cursor-pointer hover:underline">Chẩn đoán giọng nói & GPS</summary>
+          <p id="nav-voice-diagnostics" role="status" class="break-words mt-1 p-2 bg-surface rounded text-secondary">
+          </p>
+          <p class="mt-1 text-outline">Trợ lý dẫn đường cần GPS thực và giọng tiếng Việt trên thiết bị. Luôn tuân thủ
+            biển báo giao thông thực tế.</p>
+        </details>
+
+        <!-- Nút chuyển tiếp đặt xăng -->
+        <div class="pt-2 border-t border-outline-variant/30">
+          <a id="station-workflow-link" href="/BanDo.html"
+            class="w-full btn-primary py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm hover:shadow">
+            <span class="material-symbols-outlined text-[18px]">local_gas_station</span>
+            <span>Đặt trước xăng tại trạm này</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Action Buttons -->
+      <div class="mt-auto pt-lg border-t border-surface-container-high flex gap-md">
+        <button id="btn-change-station" type="button" class="btn-secondary flex-1 py-3 text-center">
+          <span class="material-symbols-outlined text-[18px]">map</span> Đổi trạm khác
+        </button>
+        <button id="btn-start-nav" type="button" disabled
+          class="petro-nav-button btn-primary flex-1 py-3 text-center flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-[20px]"
+            style="font-variation-settings: 'FILL' 1;">navigation</span> Bắt đầu đi
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Panel: Real Leaflet Map (60%) -->
+  <section class="w-full md:w-[60%] relative h-full bg-slate-100 flex-1">
+    <div id="route-map"></div>
+
+    <div class="petro-nav-overlay">
+    <!-- Guidance card remains on the map when the left pane is collapsed. -->
+    <div id="nav-turn-banner" class="petro-turn-banner" role="status" aria-live="polite" aria-atomic="true">
+      <span id="nav-turn-icon" class="material-symbols-outlined petro-turn-icon" aria-hidden="true">navigation</span>
+      <div class="petro-turn-content">
+        <div id="nav-turn-distance" class="petro-turn-distance">Đang tải lộ trình</div>
+        <div id="nav-turn-instruction" class="petro-turn-instruction">Xem trước tuyến đường đến trạm</div>
+        <div id="nav-turn-road" class="petro-turn-summary"></div>
+        <div id="nav-turn-following" class="petro-turn-summary"></div>
+        <div id="overlay-dist-head" class="petro-turn-summary">Đang tải...</div>
+        <div id="overlay-addr-sub" class="petro-turn-destination">Chỉ đường tới trạm xăng</div>
+      </div>
+    </div>
+    <div class="petro-nav-bottom">
+    <div class="petro-nav-fabs">
+    <button id="nav-stop-fab" type="button" class="petro-stop-fab" disabled aria-label="Dừng dẫn đường"
+      title="Dừng dẫn đường">
+      <span class="material-symbols-outlined" aria-hidden="true">stop_circle</span><span
+        class="petro-fab-text">Dừng</span>
+    </button>
+    <button id="nav-recenter-fab" type="button" class="petro-recenter-fab" disabled
+      aria-label="Về giữa — trở về vị trí GPS của tôi" title="Về giữa">
+      <span class="material-symbols-outlined" aria-hidden="true">my_location</span><span class="petro-fab-text">Về
+        giữa</span>
+    </button>
+    <button id="nav-show-info" type="button" class="petro-info-toggle petro-info-show" aria-controls="nav-route-info"
+      aria-expanded="false">Hiện thông tin</button>
+    </div>
+    <section id="map-nav-panel" class="petro-nav-live" aria-label="Trạng thái GPS và dẫn đường">
+      <div class="petro-nav-live-header">
+        <span id="map-nav-icon" class="material-symbols-outlined petro-nav-live-icon"
+          aria-hidden="true">navigation</span>
+        <div class="petro-nav-live-summary" role="status" aria-live="polite" aria-atomic="true">
+          <p id="map-nav-state" class="font-bold">Đang chuẩn bị dẫn đường…</p>
+          <p id="map-nav-short-status">GPS liên tục đã tắt</p>
+          <p id="nav-camera-status">GPS liên tục đã tắt</p>
+        </div>
+        <button id="nav-panel-toggle" type="button" aria-controls="map-nav-details" aria-expanded="true"
+          aria-label="Thu gọn điều khiển dẫn đường">Thu gọn</button>
+      </div>
+      <p id="map-nav-route-summary" class="text-sm font-semibold" role="status">Chưa có lộ trình đường bộ</p>
+      <p id="map-nav-warning" class="petro-nav-live-warning" role="status" aria-live="polite" hidden></p>
+      <div id="map-nav-details">
+        <p id="map-nav-status" role="status">Đang tải thông tin trạm. GPS liên tục chỉ bật khi bấm Bắt đầu đi.</p>
+        <div class="petro-nav-live-actions">
+          <button id="map-start-nav" type="button" class="petro-nav-button btn-primary" disabled>Bắt đầu đi</button>
+          <button id="map-stop-nav" type="button" class="petro-nav-button" disabled>Dừng</button>
+          <button id="nav-recenter" type="button" disabled aria-label="Đưa bản đồ về vị trí GPS">Về vị trí</button>
+        </div>
+        <label><input id="nav-follow-user" type="checkbox"> Theo vị trí GPS</label>
+        <p id="nav-follow-hint" class="petro-nav-live-hint">Kéo/zoom để xem bản đồ; tự theo lại sau một khoảng nghỉ. Chỉ
+          tắt hẳn khi bỏ chọn Theo GPS.</p>
+        <label><input id="nav-voice-enabled-map" type="checkbox" checked> Bật giọng tiếng Việt</label>
+        <button id="map-voice-test" type="button" aria-describedby="map-voice-status">Thử giọng tiếng Việt</button>
+        <p id="map-voice-status" role="status"></p>
+      </div>
+    </section>
+    </div>
+    </div>
+  </section>
+</main>
+<dialog id="nav-arrival-dialog" class="petro-arrival-dialog" role="dialog" aria-modal="true"
+  aria-labelledby="nav-arrival-title" aria-describedby="nav-arrival-description nav-arrival-station">
+  <span class="material-symbols-outlined" aria-hidden="true">flag</span>
+  <h2 id="nav-arrival-title">Bạn đã đến trạm xăng!</h2>
+  <p id="nav-arrival-station"></p>
+  <p id="nav-arrival-description">Dẫn đường đã kết thúc. GPS theo dõi và tính lại tuyến đã dừng. Không có giao dịch hoặc
+    yêu cầu đổ xăng nào được tạo tự động.</p>
+  <button id="nav-arrival-done" type="button" class="btn-primary" autofocus>Hoàn tất</button>
+</dialog>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/basemaps.js?v=5.3.1"></script>
+<script src="/static/js/voice_navigation.js?v=5.9.3"></script>
+<script src="/static/js/navigation_ui.js?v=5.9.3"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Khởi tạo Leaflet Map
+    const defaultCoords = [10.0298, 105.7765];
+    const map = L.map("route-map", {
+      zoomControl: false,
+      dragging: true,
+      touchZoom: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      boxZoom: true,
+      keyboard: true
+    }).setView(defaultCoords, 14);
+
+    PetroBasemaps.attach(map);
+
+    L.control.zoom({ position: "topright" }).addTo(map);
+
+    let userLat = 10.0298;
+    let userLng = 105.7765;
+    let currentHeading = null;
+    let hasGpsFix = false;
+
+    // Lấy GPS hiện tại nếu có
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 4000 }));
+        const gpsValidation = PetroNavigation.validateGpsPosition(pos);
+        hasGpsFix = !gpsValidation.reason;
+        if (hasGpsFix || gpsValidation.coarseFix) {
+          userLat = pos.coords.latitude; userLng = pos.coords.longitude;
+          currentHeading = Number.isFinite(pos.coords.heading) && pos.coords.heading >= 0 && pos.coords.heading < 360 ? pos.coords.heading : null;
+          if (!hasGpsFix) document.getElementById('nav-gps-status').textContent = gpsValidation.reason;
+        } else document.getElementById('nav-gps-status').textContent = gpsValidation.reason || 'GPS không hợp lệ; chỉ xem trước từ tâm Cần Thơ.';
+      } catch (e) {
+        document.getElementById('nav-gps-status').textContent = 'Chưa có GPS: bản xem trước dùng tâm Cần Thơ, không phải vị trí thực.';
+      }
+    }
+
+    // Marker người dùng
+    const userMarker = L.marker([userLat, userLng], {
+      icon: L.divIcon({
+        className: "user-pin",
+        html: `
+          <div class="relative flex items-center justify-center w-7 h-7">
+            <div class="w-4 h-4 rounded-full bg-blue-600 border-2 border-white shadow-md"></div>
+          </div>
+        `,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      })
+    }).addTo(map).bindTooltip(hasGpsFix ? 'Vị trí GPS' : 'Vị trí xem trước — không đủ chính xác để dẫn đường');
+    document.getElementById('start-point-label').textContent = hasGpsFix ? 'Vị trí GPS' : 'Vị trí xem trước (chưa có GPS chính xác)';
+
+    // 2. Lấy thông tin trạm từ URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    document.getElementById('route-back-map').href = `/BanDo.html?${urlParams}`;
+    const tx_ma = urlParams.get("tx_ma");
+    const discoveryFilters = {
+      amenity_ids: urlParams.getAll('amenity_ids'),
+      amenity_match: urlParams.get('amenity_match') === 'any' ? 'any' : 'all',
+      fuel_type: urlParams.get('fuel_type'), search: urlParams.get('search'),
+      radius_km: Number(urlParams.get('radius_km')) || 10
+    };
+
+    let station = null;
+    try {
+      if (tx_ma) {
+        const res = await fetch(`/api/map/stations/${tx_ma}?lat=${userLat}&lng=${userLng}`);
+        if (!res.ok) {
+          alert("Trạm không còn công khai hoặc thông tin tạm thời không khả dụng.");
+          return;
+        }
+        const data = await res.json();
+        if (data.status === "success") station = data.station;
+      }
+
+      if (!station) {
+        // Smart Routing chọn trạm phù hợp; frontend không tự rank.
+        const res = await fetch("/api/routing/recommendations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ latitude: userLat, longitude: userLng, heading: currentHeading, ...discoveryFilters, exclude_stations: [], limit: 1 })
+        });
+        const data = await res.json();
+        if (data.recommendations && data.recommendations.length > 0) {
+          const stationRes = await fetch(`/api/map/stations/${data.recommendations[0].station_id}?lat=${userLat}&lng=${userLng}`);
+          const stationData = await stationRes.json();
+          station = stationData.station || null;
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi lấy dữ liệu trạm:", err);
+    }
+
+    if (!station) {
+      alert("Không tìm thấy trạm đã được duyệt phù hợp trong bán kính hiện tại.");
+      return;
+    }
+
+    // Cập nhật giao diện bên trái
+    document.getElementById("dest-station-name").textContent = station.tx_ten;
+    document.getElementById("dest-station-addr").textContent = station.tx_diachi;
+    document.getElementById("overlay-addr-sub").textContent = station.tx_ten;
+    document.getElementById('station-workflow-link').href = `/BatDau.html?tx_ma=${encodeURIComponent(station.tx_ma)}`;
+
+    // Marker trạm đích
+    const destMarker = L.marker([station.lat, station.lng], {
+      icon: L.divIcon({
+        className: "dest-pin",
+        html: `
+          <div class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg border-2 border-white">
+            <span class="material-symbols-outlined text-[18px]">local_gas_station</span>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      })
+    }).addTo(map).bindPopup(`<b>${petroEscapeHtml(station.tx_ten)}</b><br>${petroEscapeHtml(station.tx_diachi)}`);
+
+    let routeLine = null, navigation = null;
+    function showRoute(data) {
+      if (!data.geometry?.coordinates) return;
+      if (routeLine) map.removeLayer(routeLine);
+      routeLine = L.polyline(data.geometry.coordinates.map(c => [c[1], c[0]]), {
+        color: '#006c49', weight: 5, opacity: 0.85, dashArray: data.is_fallback ? '6,6' : null
+      }).addTo(map);
+      // Live rerouting updates the polyline, not the user's chosen camera mode.
+      if (!navigation?.active) map.fitBounds(routeLine.getBounds(), { padding: [60, 60] });
+      document.getElementById('route-dist-text').textContent = PetroTravelFormat.road(data);
+      document.getElementById('route-dur-text').textContent = PetroTravelFormat.eta(data);
+      document.getElementById('map-nav-route-summary').textContent = `Tổng tuyến: ${PetroTravelFormat.road(data)} • ${PetroTravelFormat.eta(data)}`;
+      document.getElementById('overlay-dist-head').textContent = `Tổng tuyến: ${PetroTravelFormat.road(data)} • ${PetroTravelFormat.eta(data)}${data.is_fallback ? ' — tuyến thẳng tham khảo, không có hướng dẫn rẽ' : ''}`;
+    }
+    async function fetchRoute(fix, { signal } = {}) {
+      const params = new URLSearchParams({
+        start_lat: fix.latitude, start_lng: fix.longitude,
+        end_lat: station.lat, end_lng: station.lng, station_id: station.tx_ma
+      });
+      const response = await fetch(`/api/routing/route?${params}`, { cache: 'no-store', signal });
+      if (!response.ok) throw new Error('Trạm không còn công khai hoặc không thể tải lộ trình.');
+      return response.json();
+    }
+    const navUI = new PetroNavigationUI.NavigationUI({
+      map, marker: userMarker,
+      stationName: station.tx_ten,
+      onArrived: () => { routeLine?.setStyle({ opacity: 0.15, dashArray: '5,8' }); },
+      onStart: () => navigation.start(), onStop: () => navigation.stop(),
+      onRepeat: () => navigation.repeat(), onMute: value => navigation.mute(value),
+      onTestVoice: () => navigation.testVoice()
+    });
+    navigation = new PetroNavigation.VoiceNavigation({
+      fetchRoute, onRoute: showRoute, destinationName: station.tx_ten,
+      checkEligibility: async ({ signal } = {}) => {
+        const response = await fetch(`/api/map/stations/${encodeURIComponent(station.tx_ma)}`, { cache: 'no-store', signal });
+        if (!response.ok) throw new Error('Station unavailable');
+      },
+      onFix: fix => {
+        userLat = fix.latitude; userLng = fix.longitude; currentHeading = fix.heading;
+        navUI.renderFix(fix);
+      },
+      onUpdate: state => navUI.render(state)
+    });
+    window.addEventListener('pagehide', event => {
+      if (event.persisted) navigation.stop(); // BFCache return needs explicit Start again.
+      else { navigation.destroy(); navUI.destroy(); }
+    });
+    // Bind Start before waiting for route preview. A late preview must never
+    // replace a GPS route after the user has started/stopped a session.
+    const previewEpoch = navigation.epoch;
+    try {
+      const preview = await fetchRoute({ latitude: userLat, longitude: userLng });
+      if (navigation.epoch === previewEpoch && !navigation.active) showRoute(preview);
+    } catch (error) {
+      if (navigation.epoch === previewEpoch) navigation.update({ gpsStatus: 'Không thể tải bản xem trước. Bấm Bắt đầu đi để thử từ GPS.' });
+    }
+
+    const excludeStations = (urlParams.get("exclude") || "").split(",").filter(Boolean);
+    document.getElementById("btn-change-station")?.addEventListener("click", async () => {
+      navigation.stop();
+      try {
+        if (station.tx_ma && !excludeStations.includes(station.tx_ma)) excludeStations.push(station.tx_ma);
+        const response = await fetch("/api/routing/recommendations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ latitude: userLat, longitude: userLng, heading: currentHeading, ...discoveryFilters, exclude_stations: excludeStations, limit: 3 })
+        });
+        if (!response.ok) throw new Error('Không thể đổi trạm lúc này.');
+        const data = await response.json();
+        if (data.recommendations && data.recommendations.length) {
+          const nextId = data.recommendations[0].station_id;
+          const nextParams = new URLSearchParams(urlParams);
+          nextParams.set('tx_ma', nextId); nextParams.set('exclude', excludeStations.join(','));
+          window.location.href = `/ChiDuong.html?${nextParams}`;
+        } else {
+          alert(data.message || "Không còn trạm phù hợp trong bán kính hiện tại.");
+        }
+      } catch (error) { document.getElementById('nav-gps-status').textContent = error.message; }
+    });
+  });
+</script>
+{% endblock %}

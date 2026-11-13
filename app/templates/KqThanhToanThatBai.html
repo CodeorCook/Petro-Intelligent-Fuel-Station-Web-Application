@@ -1,0 +1,27 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Thanh toán thất bại - Petro{% endblock %}
+
+{% block content %}
+<main class="flex-grow flex items-center justify-center p-md md:p-xl py-xl">
+  <!-- Failure Card -->
+  <div class="card-base shadow-lg border-error-container w-full max-w-lg p-xl flex flex-col items-center text-center">
+    <!-- Icon Container -->
+    <div class="w-24 h-24 rounded-full bg-error-container flex items-center justify-center mb-lg shadow-sm">
+      <span class="material-symbols-outlined text-[48px] text-error" style="font-variation-settings: 'FILL' 1;">cancel</span>
+    </div>
+    
+    <!-- Typography Content -->
+    <h1 class="text-headline-md font-bold text-on-surface mb-sm">Thanh toán không thành công</h1>
+    <p class="text-body-lg text-on-surface-variant mb-xl max-w-sm">
+      Không thể hoàn tất giao dịch. Vui lòng kiểm tra lại tài khoản hoặc thử phương thức khác.
+    </p>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col w-full gap-md">
+      <a href="/ThanhToan.html" class="btn-primary w-full py-3 text-center">Thử lại</a>
+      <a href="/" class="btn-secondary w-full py-3 text-center">Về trang chủ</a>
+    </div>
+  </div>
+</main>
+{% endblock %}

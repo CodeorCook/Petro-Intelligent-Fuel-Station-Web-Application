@@ -1,0 +1,177 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Lịch sử giao dịch - Petro{% endblock %}
+
+{% block content %}
+<main class="flex-grow w-full max-w-7xl mx-auto px-md md:px-xl py-xl space-y-xl">
+  <!-- Page Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+      <h1 class="text-display-lg font-bold text-on-background mb-sm">Lịch sử giao dịch</h1>
+      <p class="text-body-md text-on-surface-variant">Quản lý và theo dõi các khoản thanh toán nhiên liệu của bạn.</p>
+    </div>
+    <a href="/ThanhToan.html" class="btn-primary py-2.5 px-4 rounded-xl font-bold text-sm flex items-center gap-2 shadow-sm hover:shadow">
+      <span class="material-symbols-outlined text-[18px]">add</span> Đặt xăng mới
+    </a>
+  </div>
+
+  <!-- Summary Bento Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-md mb-xl">
+    <!-- Total Amount Card -->
+    <div class="col-span-1 md:col-span-2 card-base p-lg flex flex-col justify-center relative overflow-hidden border border-outline-variant/30">
+      <div class="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full blur-2xl"></div>
+      <h2 class="text-body-md text-on-surface-variant mb-xs relative z-10">Tổng tiền đã thanh toán</h2>
+      <div id="stat-total-spent" class="text-display-lg font-black text-primary relative z-10">0 VNĐ</div>
+      <div class="text-label-md text-on-surface-variant mt-sm relative z-10 flex items-center gap-xs">
+        <span class="material-symbols-outlined text-[16px]">calendar_today</span> Tất cả giao dịch thực tế
+      </div>
+    </div>
+
+    <!-- Stats Column -->
+    <div class="col-span-1 md:col-span-2 grid grid-cols-2 gap-md">
+      <div class="card-base p-md flex flex-col justify-between border border-outline-variant/30">
+        <div class="flex justify-between items-start mb-sm">
+          <span class="text-body-md text-on-surface-variant">Tổng giao dịch</span>
+          <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined text-[18px]">receipt_long</span>
+          </div>
+        </div>
+        <div id="stat-total-count" class="text-headline-md font-bold text-on-surface">0</div>
+      </div>
+      <div class="bg-primary/5 p-md rounded-xl border border-primary/20 flex flex-col justify-between">
+        <div class="flex justify-between items-start mb-sm">
+          <span class="text-body-md text-primary font-semibold">Thành công</span>
+          <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+          </div>
+        </div>
+        <div id="stat-success-count" class="text-headline-md font-bold text-primary">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History List Table -->
+  <div class="card-base overflow-hidden border border-outline-variant/30 shadow-md">
+    <div class="p-md border-b border-surface-container-high flex justify-between items-center bg-surface-container-lowest">
+      <h2 class="text-title-lg font-bold text-on-surface">Giao dịch gần đây</h2>
+      <span class="text-xs text-secondary font-medium">Bấm vào từng dòng để xem biên lai chi tiết</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <!-- [Ghi chú] Thẻ thead gốc:
+          <tr class="bg-surface-container-low text-label-md text-secondary uppercase border-b border-outline-variant/40">
+            <th class="py-3.5 px-4 font-bold">Mã GD</th>
+            <th class="py-3.5 px-4 font-bold">Trạm xăng</th>
+            <th class="py-3.5 px-4 font-bold">Nhiên liệu</th>
+            <th class="py-3.5 px-4 font-bold text-right">Số tiền</th>
+            <th class="py-3.5 px-4 font-bold">Phương thức</th>
+            <th class="py-3.5 px-4 font-bold">Ngày tạo</th>
+            <th class="py-3.5 px-4 font-bold">Trạng thái</th>
+          </tr>
+          -->
+          <tr class="bg-surface-container-low text-label-md text-secondary uppercase border-b border-outline-variant/40">
+            <th class="py-3.5 px-4 font-bold whitespace-nowrap">Mã GD</th>
+            <th class="py-3.5 px-4 font-bold min-w-[220px]">Trạm xăng</th>
+            <th class="py-3.5 px-4 font-bold min-w-[160px] whitespace-nowrap">Nhiên liệu</th>
+            <th class="py-3.5 px-4 font-bold text-right whitespace-nowrap min-w-[120px]">Số tiền</th>
+            <th class="py-3.5 px-4 font-bold whitespace-nowrap">Phương thức</th>
+            <th class="py-3.5 px-4 font-bold whitespace-nowrap">Ngày tạo</th>
+            <th class="py-3.5 px-4 font-bold whitespace-nowrap text-center">Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody id="history-table-body" class="divide-y divide-outline-variant/30 text-body-md text-on-surface">
+          <tr>
+            <td colspan="7" class="py-8 text-center text-secondary">Đang tải dữ liệu lịch sử giao dịch...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      // Nếu là tài khoản Doanh nghiệp, chuyển hướng sang danh mục hóa đơn bán hàng của trạm
+      try {
+        const uRes = await fetch("/api/auth/me");
+        if (uRes.ok) {
+          const u = await uRes.json();
+          if (u.role === "DOANH_NGHIEP") {
+            window.location.replace("/QuanLyTram.html?ops_tab=invoices");
+            return;
+          }
+        }
+      } catch (_) {}
+
+      const res = await fetch("/api/payment/history");
+      const data = await res.json();
+
+      document.getElementById("stat-total-spent").textContent = data.total_spent_formatted || "0 VNĐ";
+      document.getElementById("stat-total-count").textContent = data.total_transactions || "0";
+      document.getElementById("stat-success-count").textContent = data.success_count || "0";
+
+      const tbody = document.getElementById("history-table-body");
+      tbody.innerHTML = "";
+
+      const transactions = data.transactions || [];
+      if (transactions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-secondary">Chưa có giao dịch nào được ghi nhận.</td></tr>`;
+        return;
+      }
+
+      transactions.forEach(tx => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-primary/5 transition-colors cursor-pointer";
+        tr.onclick = () => {
+          window.location.href = `/ChiTietGiaoDich.html?gd_ma=${tx.gd_ma}`;
+        };
+
+        const isSuccess = tx.is_success;
+        /* [Ghi chú] Badge gốc bị co hẹp vỡ chữ:
+        const statusBadge = isSuccess
+          ? `<span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold uppercase">Đã thanh toán</span>`
+          : `<span class="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-bold uppercase">Chờ thanh toán</span>`;
+        */
+        const statusBadge = isSuccess
+          ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold uppercase whitespace-nowrap tracking-wider shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Đã thanh toán</span>`
+          : `<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-bold uppercase whitespace-nowrap tracking-wider shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>Chờ thanh toán</span>`;
+
+        const methodBadge = tx.payment_method === "TIEN_MAT"
+          ? `<span class="text-xs font-semibold text-secondary whitespace-nowrap inline-flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">payments</span>Tiền mặt</span>`
+          : `<span class="text-xs font-semibold text-primary whitespace-nowrap inline-flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">qr_code_2</span>VietQR</span>`;
+
+        let fuelDisplayName = tx.nl_ten;
+        if (fuelDisplayName === "Dau DO 0.05S") fuelDisplayName = "Dầu DO 0,05S";
+        else if (fuelDisplayName === "Xang E5 RON92") fuelDisplayName = "Xăng E5 RON 92";
+
+        /* [Ghi chú] Template dòng cũ bị xuống dòng chữ 'đ' và vỡ ô:
+        tr.innerHTML = `
+          <td class="py-3.5 px-4 font-mono font-bold text-primary">${tx.gd_ma}</td>
+          <td class="py-3.5 px-4 font-medium text-on-surface">${petroEscapeHtml(tx.tx_ten)}</td>
+          <td class="py-3.5 px-4 text-secondary">${tx.nl_ten} ${tx.soluong > 0 ? `(${tx.soluong} L)` : ""}</td>
+          <td class="py-3.5 px-4 text-right font-black text-on-surface">${tx.amount_formatted}</td>
+          <td class="py-3.5 px-4">${methodBadge}</td>
+          <td class="py-3.5 px-4 text-secondary text-sm">${tx.date}</td>
+          <td class="py-3.5 px-4">${statusBadge}</td>
+        `;
+        */
+        tr.innerHTML = `
+          <td class="py-3.5 px-4 font-mono font-bold text-primary whitespace-nowrap">${tx.gd_ma}</td>
+          <td class="py-3.5 px-4 font-medium text-on-surface">${petroEscapeHtml(tx.tx_ten)}</td>
+          <td class="py-3.5 px-4 text-secondary whitespace-nowrap font-medium">${fuelDisplayName} ${tx.soluong > 0 ? `<span class="text-xs text-secondary/80 font-normal">(${tx.soluong} L)</span>` : ""}</td>
+          <td class="py-3.5 px-4 text-right font-black text-on-surface whitespace-nowrap">${tx.amount_formatted}</td>
+          <td class="py-3.5 px-4 whitespace-nowrap">${methodBadge}</td>
+          <td class="py-3.5 px-4 text-secondary text-sm whitespace-nowrap">${tx.date}</td>
+          <td class="py-3.5 px-4 whitespace-nowrap text-center">${statusBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (e) {
+      console.error(e);
+      document.getElementById("history-table-body").innerHTML = `<tr><td colspan="7" class="py-8 text-center text-red-600">Lỗi khi tải dữ liệu lịch sử giao dịch.</td></tr>`;
+    }
+  });
+</script>
+{% endblock %}

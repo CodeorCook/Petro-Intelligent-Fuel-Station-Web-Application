@@ -1,0 +1,357 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Bản đồ trạm xăng & Tìm trạm gần nhất - Petro{% endblock %}
+
+{% block head_extra %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="/static/css/basemaps.css?v=5.8.0">
+
+<style>
+  /* Thiết lập bắt buộc kích thước cho bản đồ Leaflet */
+  #petro-map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background-color: #f1f5f9;
+  }
+
+  /* Fix lỗi Tailwind CSS ghi đè làm hỏng gạch bản đồ Leaflet */
+  .leaflet-pane img,
+  .leaflet-tile,
+  .leaflet-tile-container img {
+    max-width: none !important;
+    max-height: none !important;
+  }
+
+  .leaflet-popup-content-wrapper {
+    padding: 0;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border: 1px solid rgba(0, 108, 73, 0.15);
+  }
+
+  .leaflet-popup-content {
+    margin: 12px 14px;
+    line-height: 1.4;
+  }
+
+  .leaflet-popup-tip {
+    background: white;
+  }
+
+  /* Hiệu ứng xung nhịp cho vị trí người dùng */
+  @keyframes radar-pulse {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    70% { transform: scale(2.4); opacity: 0; }
+    100% { transform: scale(2.6); opacity: 0; }
+  }
+
+  .radar-ring {
+    animation: radar-pulse 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+  }
+
+  /* [Ghi chú] CSS chip lọc cũ:
+  .filter-chip {
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid var(--color-outline-variant);
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  */
+  /* Chip lọc tối ưu vùng chạm (Touch-friendly 38px) cho tài xế xe ô tô */
+  .filter-chip {
+    padding: 6px 14px;
+    min-height: 38px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--color-outline-variant);
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .filter-chip:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  /* Ẩn footer ở trang bản đồ để giao diện bản đồ và danh sách trạm lấp đầy màn hình, không bị cuộn đè */
+  footer {
+    display: none !important;
+  }
+
+  /* Mobile responsiveness tối ưu cho thanh bên & danh sách trạm */
+  @media (max-width: 768px) {
+    .petro-map-layout {
+      height: calc(100vh - 65px - 56px) !important;
+      height: calc(100dvh - 65px - 56px) !important;
+    }
+    .filter-chip {
+      padding: 4px 10px;
+      min-height: 30px;
+      font-size: 11px;
+    }
+    #sidebar-panel {
+      position: relative;
+      order: 2;
+      width: 100% !important;
+      height: 60% !important;
+      max-height: 92vh;
+      flex-shrink: 0;
+      z-index: 20;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      box-shadow: 0 -4px 18px rgba(0,0,0,0.12);
+      transition: height 0.25s ease-in-out;
+    }
+    #sidebar-panel.view-map {
+      height: 18% !important;
+    }
+    #sidebar-panel.view-split {
+      height: 60% !important;
+    }
+    #sidebar-panel.view-list {
+      height: 90% !important;
+    }
+    .petro-map-layout > section {
+      height: auto !important;
+      flex: 1 1 auto !important;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="petro-map-layout flex-1 flex flex-col md:flex-row overflow-hidden relative">
+  <!-- LEFT SIDEBAR (35%) -->
+  <aside id="sidebar-panel" class="w-full md:w-[35%] bg-surface-container-lowest border-r border-outline-variant flex flex-col h-full z-10 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
+    <!-- Mobile Segmented View Control: Bản đồ vs Phân đôi vs Danh sách -->
+    <div class="md:hidden flex items-center justify-between p-2 bg-surface-container-low border-b border-outline-variant/20 rounded-t-2xl shrink-0">
+      <div class="inline-flex rounded-xl p-1 bg-surface-container border border-outline-variant/30 w-full gap-1">
+        <button type="button" id="tab-btn-map" onclick="setMobileView('map')" class="flex-1 py-1 px-2 rounded-lg text-xs font-bold text-secondary hover:text-primary transition-all flex items-center justify-center gap-1">
+          <span class="material-symbols-outlined text-[15px]">map</span>
+          <span>Bản đồ</span>
+        </button>
+        <button type="button" id="tab-btn-split" onclick="setMobileView('split')" class="flex-1 py-1 px-2 rounded-lg text-xs font-bold bg-white text-primary shadow-xs transition-all flex items-center justify-center gap-1">
+          <span class="material-symbols-outlined text-[15px]">vertical_split</span>
+          <span>Phân đôi</span>
+        </button>
+        <button type="button" id="tab-btn-list" onclick="setMobileView('list')" class="flex-1 py-1 px-2 rounded-lg text-xs font-bold text-secondary hover:text-primary transition-all flex items-center justify-center gap-1">
+          <span class="material-symbols-outlined text-[15px]">list_alt</span>
+          <span>Danh sách trạm</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Header & Search -->
+    <div class="p-3 md:p-md border-b border-outline-variant shrink-0 bg-surface-container-lowest z-20 space-y-2">
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <h1 class="text-title-md font-bold text-on-surface tracking-tight">Trạm xăng gần bạn</h1>
+          <p class="text-[11px] text-secondary mt-0.5 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Tìm theo GPS & khoảng cách
+          </p>
+        </div>
+        <span id="station-count-badge" class="px-2.5 py-0.5 rounded-full bg-primary/10 text-xs font-bold text-primary border border-primary/20 shrink-0 shadow-xs">
+          Đang quét...
+        </span>
+      </div>
+
+      <!-- Ô tìm kiếm -->
+      <div class="relative flex-1">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+        <input id="station-search-input"
+               class="input-base pl-9 pr-8 py-1.5 text-xs md:text-sm w-full shadow-xs rounded-xl focus:ring-2 focus:ring-primary/20"
+               placeholder="Tìm tên trạm, đường (vd: Petrolimex, 30/4)..."
+               type="text">
+        <button onclick="document.getElementById('station-search-input').value=''; window.petroMap && window.petroMap.resetFilters();"
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface text-[15px] transition-colors" title="Xóa tìm kiếm">
+          <span class="material-symbols-outlined text-[16px]">cancel</span>
+        </button>
+      </div>
+
+      <!-- Bộ lọc nhanh gọn trên 1 dòng cuộn ngang -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar pt-0.5">
+        <button onclick="window.petroMap.setFuelFilter('RON95')" data-fuel="RON95" class="filter-chip chip-fuel bg-surface-container-low text-on-surface-variant font-medium shrink-0">
+          RON 95
+        </button>
+        <button onclick="window.petroMap.setFuelFilter('E5')" data-fuel="E5" class="filter-chip chip-fuel bg-surface-container-low text-on-surface-variant font-medium shrink-0">
+          E5 RON 92
+        </button>
+        <button onclick="window.petroMap.setFuelFilter('DIESEL')" data-fuel="DIESEL" class="filter-chip chip-fuel bg-surface-container-low text-on-surface-variant font-medium shrink-0">
+          Dầu Diesel
+        </button>
+        <span class="text-outline-variant/60 shrink-0 font-light">|</span>
+        <button onclick="window.petroMap.setRadiusFilter(2)" data-radius="2" class="filter-chip chip-radius bg-surface-container-low text-on-surface-variant font-medium shrink-0">
+          &lt; 2 km
+        </button>
+        <button onclick="window.petroMap.setRadiusFilter(5)" data-radius="5" class="filter-chip chip-radius bg-surface-container-low text-on-surface-variant font-medium shrink-0">
+          &lt; 5 km
+        </button>
+        <button onclick="window.petroMap.setRadiusFilter(10)" data-radius="10" class="filter-chip chip-radius bg-surface-container-low text-on-surface-variant font-medium shrink-0">
+          &lt; 10 km
+        </button>
+      </div>
+
+      <!-- Tiện ích tại trạm -->
+      <details class="group border border-outline-variant/40 rounded-xl bg-surface-container-low/40 p-2.5 text-xs transition-all">
+        <summary class="cursor-pointer font-bold text-on-surface flex items-center justify-between list-none">
+          <span class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-primary">local_convenience_store</span>
+            Tiện ích trạm (<span id="amenity-count" class="text-primary font-bold">0</span> đã chọn)
+          </span>
+          <span class="material-symbols-outlined text-[18px] text-secondary group-open:rotate-180 transition-transform">expand_more</span>
+        </summary>
+        <div class="pt-2 border-t border-outline-variant/30 mt-2 space-y-2">
+          <div id="amenity-options" class="space-y-1.5 py-1 text-xs" aria-live="polite">Đang tải tiện ích…</div>
+          <div class="flex items-center justify-between gap-2 pt-1 border-t border-outline-variant/20">
+            <div class="flex items-center gap-1 flex-1">
+              <label class="text-[11px] text-secondary shrink-0" for="amenity-match">Kết hợp:</label>
+              <select id="amenity-match" class="rounded-lg border border-outline-variant/40 p-1 text-xs bg-surface flex-1">
+                <option value="all">Có tất cả tiện ích</option>
+                <option value="any">Có ít nhất một tiện ích</option>
+              </select>
+            </div>
+            <button type="button" id="amenity-clear" class="text-primary hover:underline text-[11px] font-bold p-1 shrink-0">Bỏ chọn</button>
+          </div>
+        </div>
+      </details>
+
+      <div class="flex items-center justify-between gap-2 pt-1 text-xs">
+        <button class="btn-my-location flex-1 flex items-center justify-center gap-1.5 text-primary font-bold bg-primary/5 hover:bg-primary/10 border border-primary/20 px-3 py-2 rounded-xl transition-all shadow-sm">
+          <span class="material-symbols-outlined text-[16px]">my_location</span>
+          Vị trí hiện tại
+        </button>
+
+        <button class="btn-find-nearest flex-1 flex items-center justify-center gap-1.5 text-emerald-800 font-bold bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-2 rounded-xl transition-all shadow-sm">
+          <span class="material-symbols-outlined text-[16px]">near_me</span>
+          Gợi ý trạm phù hợp
+        </button>
+      </div>
+    </div>
+
+    <!-- Station List (Scrollable) -->
+    <div id="station-list" class="flex-1 overflow-y-auto p-md space-y-md custom-scrollbar">
+      <!-- Loading Skeleton ban đầu -->
+      <div class="space-y-3">
+        <div class="card-base p-md animate-pulse space-y-2">
+          <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+          <div class="h-6 bg-gray-200 rounded w-full"></div>
+        </div>
+        <div class="card-base p-md animate-pulse space-y-2">
+          <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+          <div class="h-6 bg-gray-200 rounded w-full"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- RIGHT SIDE (65%) - INTERACTIVE MAP -->
+  <section class="w-full md:w-[65%] relative bg-slate-100 flex-1 overflow-hidden h-full">
+    <!-- Container Bản đồ Leaflet -->
+    <div id="petro-map" class="w-full h-full absolute inset-0"></div>
+
+    <!-- Traffic Legend Panel (Top Left) -->
+    <div class="absolute top-4 left-4 bg-white/95 backdrop-blur-md p-2 px-3 rounded-xl shadow-md border border-slate-200 flex gap-3 items-center z-[1000]">
+      <div class="flex items-center gap-1 text-[11px] text-gray-700 font-medium">
+        <span class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm"></span> Thông thoáng
+      </div>
+      <div class="flex items-center gap-1 text-[11px] text-gray-700 font-medium">
+        <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-sm"></span> Đông xe
+      </div>
+      <div class="flex items-center gap-1 text-[11px] text-gray-700 font-medium">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span> Bình thường
+      </div>
+    </div>
+
+    <!-- Map Controls (Top Right) -->
+    <div class="absolute top-4 right-4 flex flex-col gap-2 z-[1000]">
+      <div class="bg-white rounded-xl shadow-md border border-slate-200 flex flex-col overflow-hidden">
+        <button id="btn-zoom-in" class="p-2 hover:bg-slate-50 text-gray-700 border-b border-slate-100 transition-colors" title="Phóng to">
+          <span class="material-symbols-outlined text-[20px]">add</span>
+        </button>
+        <button id="btn-zoom-out" class="p-2 hover:bg-slate-50 text-gray-700 transition-colors" title="Thu nhỏ">
+          <span class="material-symbols-outlined text-[20px]">remove</span>
+        </button>
+      </div>
+
+      <button onclick="window.petroMap && window.petroMap.focusCanThoCenter()" class="p-2 bg-white rounded-xl shadow-md border border-slate-200 hover:bg-slate-50 text-gray-700 transition-colors flex items-center justify-center" title="Xem cận cảnh cụm trạm xăng Cần Thơ">
+        <span class="material-symbols-outlined text-[20px]">center_focus_strong</span>
+      </button>
+
+      <button class="btn-my-location p-2 bg-white rounded-xl shadow-md border border-slate-200 hover:bg-slate-50 text-primary transition-colors flex items-center justify-center" title="Định vị vị trí GPS của bạn">
+        <span class="material-symbols-outlined text-[20px]">my_location</span>
+      </button>
+    </div>
+
+    <!-- Route Summary Banner (Floating Top Center when route active) -->
+    <div id="route-summary-banner" class="hidden absolute top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-[1000]"></div>
+
+    <!-- Top 3 do Smart Routing xếp hạng; không tính ranking tại frontend. -->
+    <div id="routing-recommendations" class="hidden absolute top-20 left-4 w-[90%] max-w-sm bg-white/95 rounded-xl shadow-xl border border-slate-200 z-[1000]"></div>
+
+    <!-- Floating Action Button: Smart Routing recommendation -->
+    <button class="btn-find-nearest absolute bottom-6 left-1/2 -translate-x-1/2 btn-primary px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all z-[1000] border-2 border-white">
+      <span class="material-symbols-outlined text-[22px]">local_gas_station</span>
+      <span>Gợi ý trạm phù hợp</span>
+    </button>
+  </section>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Petro Map Service Logic -->
+<script src="/static/js/basemaps.js?v=5.3.1"></script>
+<script src="/static/js/map_service.js?v=5.8c3"></script>
+<script>
+  function setMobileView(mode) {
+    const sidebar = document.getElementById('sidebar-panel');
+    const btnMap = document.getElementById('tab-btn-map');
+    const btnSplit = document.getElementById('tab-btn-split');
+    const btnList = document.getElementById('tab-btn-list');
+    if (!sidebar) return;
+
+    sidebar.classList.remove('view-map', 'view-split', 'view-list');
+    sidebar.classList.add(`view-${mode}`);
+
+    [btnMap, btnSplit, btnList].forEach(b => {
+      if (b) {
+        b.className = 'flex-1 py-1 px-2 rounded-lg text-xs font-bold text-secondary hover:text-primary transition-all flex items-center justify-center gap-1';
+      }
+    });
+    const activeBtn = mode === 'map' ? btnMap : (mode === 'list' ? btnList : btnSplit);
+    if (activeBtn) {
+      activeBtn.className = 'flex-1 py-1 px-2 rounded-lg text-xs font-bold bg-white text-primary shadow-xs transition-all flex items-center justify-center gap-1';
+    }
+
+    if (window.petroMap && window.petroMap.map) {
+      setTimeout(() => window.petroMap.map.invalidateSize(), 300);
+    }
+  }
+  window.setMobileView = setMobileView;
+</script>
+{% endblock %}

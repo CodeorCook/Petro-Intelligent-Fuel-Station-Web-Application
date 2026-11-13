@@ -1,0 +1,36 @@
+# Môi trường ảo (Virtual Environment)
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Biến môi trường & cấu hình bảo mật
+.env
+.env.*
+!.env.example
+
+# File cache của Python
+__pycache__/
+*.py[cod]
+*.$py.class
+.pytest_cache/
+
+# Thư mục Node modules của backend (Tránh đẩy code nặng lên Git)
+petro-backend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Private enterprise documents and staging manifests must never enter Git.
+var/private_evidence/
+
+# Local operational logs (not reference-price data or secrets in Git).
+.runtime/
+
+# Local generated dependencies, lint cache and PostgreSQL backups
+node_modules/
+.ruff_cache/
+*.dump
+*.backup

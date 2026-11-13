@@ -1,0 +1,238 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Đang điều hướng trực tiếp - Petro{% endblock %}
+
+{% block head_extra %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="/static/css/basemaps.css?v=5.3.1">
+<style>
+  #nav-map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background-color: #f1f5f9;
+  }
+
+  .leaflet-pane img,
+  .leaflet-tile,
+  .leaflet-tile-container img {
+    max-width: none !important;
+    max-height: none !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="flex-1 relative w-full h-[calc(100vh-65px)] overflow-hidden">
+  <!-- Interactive Navigation Map (Google Maps Tiles) -->
+  <div id="nav-map" class="w-full h-full absolute inset-0"></div>
+
+  <!-- Top Navigation Direction Card Overlay -->
+  <div class="absolute top-4 left-1/2 -translate-x-1/2 w-full max-w-lg px-4 z-[1000]">
+    <div class="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-emerald-100 flex items-center gap-4">
+      <div class="w-14 h-14 bg-emerald-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-md">
+        <span id="nav-turn-icon" class="material-symbols-outlined text-[36px]" style="font-variation-settings: 'FILL' 1;">turn_right</span>
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center gap-2">
+          <span id="nav-step-dist" class="text-2xl font-bold text-gray-900">Đang tải...</span>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">Xem trước lộ trình</span>
+        </div>
+        <div id="nav-step-instruction" class="text-sm font-semibold text-gray-700 line-clamp-1 mt-0.5">Đang tải lộ trình đề xuất đến trạm xăng</div>
+        <div id="nav-dest-label" class="text-xs text-gray-500 line-clamp-1">Đích đến: Đang tải...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Quick Control Buttons -->
+  <div class="absolute right-4 bottom-24 z-[1000] flex flex-col gap-2">
+    <button id="btn-recenter" class="w-11 h-11 bg-white hover:bg-slate-50 text-gray-700 rounded-full shadow-lg border border-gray-200 flex items-center justify-center transition-transform active:scale-95" title="Vị trí của tôi">
+      <span class="material-symbols-outlined text-[22px] text-emerald-700">my_location</span>
+    </button>
+    <button id="btn-fit-route" class="w-11 h-11 bg-white hover:bg-slate-50 text-gray-700 rounded-full shadow-lg border border-gray-200 flex items-center justify-center transition-transform active:scale-95" title="Xem toàn tuyến">
+      <span class="material-symbols-outlined text-[22px] text-gray-700">route</span>
+    </button>
+  </div>
+
+  <!-- Bottom Trip Info & Action Card -->
+  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xl px-4 z-[1000]">
+    <div class="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="flex items-center gap-3 w-full sm:w-auto">
+        <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+          <span class="material-symbols-outlined text-[24px]">local_gas_station</span>
+        </div>
+        <div>
+          <div class="flex items-baseline gap-2">
+            <span id="nav-total-time" class="text-2xl font-bold text-emerald-700">-- phút</span>
+            <span id="nav-total-distance" class="text-sm text-gray-600 font-medium">(-- km còn lại)</span>
+          </div>
+          <p id="nav-dest-addr" class="text-xs text-gray-500 line-clamp-1">Địa chỉ trạm xăng</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <a id="btn-cancel-trip" href="/BanDo.html" class="btn-secondary py-2.5 px-4 text-xs font-semibold rounded-xl whitespace-nowrap">
+          Kết thúc chuyến đi
+        </a>
+        <a id="btn-pay-now" href="/ThanhToan.html" class="btn-primary py-2.5 px-4 text-xs font-bold rounded-xl whitespace-nowrap shadow-md">
+          Đặt xăng / Đến nơi
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/basemaps.js?v=5.3.1"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const defaultCoords = [10.0298, 105.7765];
+    const mapContainer = document.getElementById("nav-map");
+    const map = L.map("nav-map", { zoomControl: false }).setView(defaultCoords, 14);
+
+    PetroBasemaps.attach(map);
+
+    L.control.zoom({ position: "topright" }).addTo(map);
+
+    setTimeout(() => map.invalidateSize(), 200);
+
+    let userLat = defaultCoords[0];
+    let userLng = defaultCoords[1];
+
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 4000 }));
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+      } catch (e) {
+        console.log("Dùng tọa độ Cần Thơ");
+      }
+    }
+
+    // Marker phương tiện người dùng (mũi tên dẫn đường hiện đại)
+    const navUserMarker = L.marker([userLat, userLng], {
+      icon: L.divIcon({
+        className: "nav-arrow-icon",
+        html: `
+          <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(0, 108, 73, 0.25);" class="animate-ping"></div>
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: #006c49; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 2.5px solid white;">
+              <span class="material-symbols-outlined" style="font-size: 18px; font-variation-settings: 'FILL' 1;">navigation</span>
+            </div>
+          </div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      })
+    }).addTo(map).bindTooltip("Vị trí của bạn", { direction: "top", offset: [0, -10] });
+
+    // Lấy thông tin trạm từ URL query
+    const urlParams = new URLSearchParams(window.location.search);
+    const tx_ma = urlParams.get("tx_ma") || "TX000001";
+
+    let station = null;
+    try {
+      const res = await fetch(`/api/map/stations/${tx_ma}?lat=${userLat}&lng=${userLng}`);
+      const data = await res.json();
+      if (data.status === "success") {
+        station = data.station;
+      }
+    } catch (err) {
+      console.error("Lỗi lấy thông tin trạm:", err);
+    }
+
+    if (!station) {
+      alert("Không tìm thấy dữ liệu trạm xăng.");
+      return;
+    }
+
+    // Cập nhật giao diện
+    document.getElementById("nav-dest-label").textContent = `Đích đến: ${station.tx_ten}`;
+    document.getElementById("nav-dest-addr").textContent = station.tx_diachi;
+    document.getElementById("btn-pay-now").href = `/ThanhToan.html?tx_ma=${station.tx_ma}`;
+
+    // Marker trạm xăng đích đến
+    const destMarker = L.marker([station.lat, station.lng], {
+      icon: L.divIcon({
+        className: "dest-pin",
+        html: `
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <div style="background: white; border: 2px solid #006c49; border-radius: 9999px; padding: 2px 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); font-weight: bold; font-size: 11px; color: #111827; white-space: nowrap;">
+              ${petroEscapeHtml(station.tx_ten)}
+            </div>
+            <div style="width: 34px; height: 34px; border-radius: 50%; background: #006c49; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 2px solid white; margin-top: -2px;">
+              <span class="material-symbols-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">local_gas_station</span>
+            </div>
+          </div>
+        `,
+        iconSize: [60, 55],
+        iconAnchor: [30, 52]
+      })
+    }).addTo(map);
+
+    // Vẽ geometry do backend RoutingProvider trả về
+    try {
+      const routeUrl = `/api/routing/route?start_lat=${userLat}&start_lng=${userLng}&end_lat=${station.lat}&end_lng=${station.lng}&station_id=${encodeURIComponent(station.tx_ma)}`;
+      const res = await fetch(routeUrl);
+      if (!res.ok) throw new Error("Trạm không còn công khai hoặc lộ trình không khả dụng");
+      const data = await res.json();
+
+      if (data.geometry && data.geometry.coordinates) {
+        const latlngs = data.geometry.coordinates.map(c => [c[1], c[0]]);
+
+        // Đường viền ngoài neon
+        L.polyline(latlngs, {
+          color: "#00422b",
+          weight: 8,
+          opacity: 0.6,
+          lineCap: "round",
+          lineJoin: "round"
+        }).addTo(map);
+
+        // Tuyến đường sáng bên trong
+        const routeInner = L.polyline(latlngs, {
+          color: "#10b981",
+          weight: 5,
+          opacity: 0.95,
+          dashArray: data.is_fallback ? "10, 8" : null,
+          lineCap: "round",
+          lineJoin: "round"
+        }).addTo(map);
+
+        let activeBounds = routeInner.getBounds();
+        map.fitBounds(activeBounds, { padding: [80, 80] });
+
+        const km = PetroTravelFormat.road(data);
+        const mins = PetroTravelFormat.eta(data);
+
+        document.getElementById("nav-step-dist").textContent = km;
+        document.getElementById("nav-total-time").textContent = mins;
+        document.getElementById("nav-total-distance").textContent = km;
+        document.getElementById("nav-step-instruction").textContent = data.is_fallback ? 'Tuyến thẳng tham khảo; không có hướng dẫn rẽ.' : `Đang xem lộ trình đề xuất đến ${station.tx_diachi}`;
+
+        document.getElementById("btn-fit-route")?.addEventListener("click", () => {
+          map.fitBounds(activeBounds, { padding: [80, 80], animate: true });
+        });
+      }
+    } catch (err) {
+      console.warn("Lộ trình tạm thời không khả dụng:", err);
+      map.removeLayer(destMarker);
+      document.getElementById("nav-step-instruction").textContent = "Trạm không còn công khai hoặc lộ trình tạm thời không khả dụng.";
+      document.getElementById("btn-pay-now").removeAttribute("href");
+    }
+
+    document.getElementById("btn-recenter")?.addEventListener("click", () => {
+      map.flyTo([userLat, userLng], 16, { animate: true });
+    });
+
+    window.addEventListener("resize", () => map.invalidateSize());
+  });
+</script>
+{% endblock %}

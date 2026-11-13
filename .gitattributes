@@ -1,0 +1,8 @@
+# Exact-byte schema contracts are checked by the existing startup guards.
+# Keep their approved bytes on Windows checkouts; never refresh hashes for EOL.
+app/core/published_price_schema.json -text
+app/core/station_self_service_schema.json -text
+proposals/phase58/LOCAL_ONBOARDING_RELEASE.json -text
+proposals/phase58/LOCAL_DEV_DATA_PROFILE.json -text
+proposals/phase58/local_dev_starter.sql -text
+proposals/phase58/local_dev_schema.sql -text

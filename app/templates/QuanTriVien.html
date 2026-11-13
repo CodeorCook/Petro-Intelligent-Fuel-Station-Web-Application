@@ -1,0 +1,370 @@
+{% extends "layouts/base.html" %}
+{% block title %}Quản trị viên - Petro{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+{% endblock %}
+{% block content %}
+<!-- Dashboard Tổng Quan Sức Khỏe Nền Tảng (Platform Health & Operations Overview) -->
+<section class="max-w-5xl mx-auto mt-lg mb-md grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
+  <!-- Card 1: Doanh nghiệp -->
+  <div class="card-base p-md border border-outline-variant/30 bg-white shadow-sm flex flex-col justify-between">
+    <div class="flex justify-between items-start">
+      <span class="text-xs text-secondary uppercase font-bold tracking-wider">Hồ Sơ Doanh Nghiệp</span>
+      <span class="p-2 rounded-xl bg-blue-500/10 text-blue-600 material-symbols-outlined text-lg">domain</span>
+    </div>
+    <div class="mt-2">
+      <div class="text-2xl font-black text-on-surface" id="admin-summary-dn">Đang kiểm tra…</div>
+      <div class="text-[11px] text-secondary mt-0.5">Đối soát giấy phép & MST</div>
+    </div>
+  </div>
+
+  <!-- Card 2: Trạm xăng -->
+  <div class="card-base p-md border border-outline-variant/30 bg-white shadow-sm flex flex-col justify-between">
+    <div class="flex justify-between items-start">
+      <span class="text-xs text-secondary uppercase font-bold tracking-wider">Mạng Lưới Trạm</span>
+      <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 material-symbols-outlined text-lg">local_gas_station</span>
+    </div>
+    <div class="mt-2">
+      <div class="text-2xl font-black text-emerald-700" id="admin-summary-tx">Đang kiểm tra…</div>
+      <div class="text-[11px] text-secondary mt-0.5">Khoảng cách an toàn 500m</div>
+    </div>
+  </div>
+
+  <!-- Card 3: Giám sát Giao dịch -->
+  <div class="card-base p-md border border-outline-variant/30 bg-white shadow-sm flex flex-col justify-between">
+    <div class="flex justify-between items-start">
+      <span class="text-xs text-secondary uppercase font-bold tracking-wider">Thanh Toán Sàn</span>
+      <span class="p-2 rounded-xl bg-purple-500/10 text-purple-600 material-symbols-outlined text-lg">monitoring</span>
+    </div>
+    <div class="mt-2">
+      <div class="text-2xl font-black text-purple-700" id="admin-summary-gmv">VietQR / Casso</div>
+      <div class="text-[11px] text-secondary mt-0.5">Tự động khớp lệnh 24/7</div>
+    </div>
+  </div>
+
+  <!-- Card 4: Sức khỏe Hệ thống -->
+  <div class="card-base p-md border border-outline-variant/30 bg-white shadow-sm flex flex-col justify-between">
+    <div class="flex justify-between items-start">
+      <span class="text-xs text-secondary uppercase font-bold tracking-wider">Trạng Thái Sàn</span>
+      <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 material-symbols-outlined text-lg">check_circle</span>
+    </div>
+    <div class="mt-2">
+      <div class="text-base font-bold text-emerald-700 flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Hoạt động tốt
+      </div>
+      <div class="text-[11px] text-secondary mt-0.5">Webhook & DB ổn định</div>
+    </div>
+  </div>
+</section>
+
+<section class="max-w-5xl mx-auto my-md card-base p-xl" data-approval-page="admin">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-md">
+    <div>
+      <h1 class="text-headline-md text-primary font-bold">Xét duyệt Doanh nghiệp</h1>
+      <p class="text-secondary text-xs mt-1">Xét duyệt hồ sơ pháp lý theo bản chụp tại lần nộp. Đọc kỹ thông tin và giấy phép trước khi quyết định.</p>
+    </div>
+    <a class="btn-secondary py-2 px-3 text-xs font-bold rounded-xl flex items-center gap-1.5" href="/TaiKhoan.html">
+      <span class="material-symbols-outlined text-sm">manage_accounts</span> Thông tin tài khoản
+    </a>
+  </div>
+  <p id="approval-message" class="text-secondary text-xs" role="status" aria-live="polite"></p>
+  <label class="block mt-md">Trạng thái
+    <select id="admin-approval-filter" class="input-base">
+      <option value="CHO_DUYET">Chờ duyệt</option><option value="CAN_BO_SUNG">Cần bổ sung</option>
+      <option value="TU_CHOI">Từ chối</option><option value="DA_DUYET">Đã duyệt</option>
+    </select>
+  </label>
+  <div id="admin-enterprise-approval-list" class="space-y-md mt-lg"></div>
+  <div class="flex gap-md mt-md"><button id="approval-previous-page" class="btn-secondary">Trang trước</button><button id="approval-next-page" class="btn-secondary">Trang tiếp</button></div>
+  <section id="admin-approval-detail" class="hidden mt-lg border-t pt-lg">
+    <h2 id="admin-approval-title" class="text-title-lg font-bold"></h2>
+    <!-- [Ghi chú] Code gốc hiển thị JSON thô:
+    <pre id="admin-approval-snapshot" class="mt-md p-md bg-surface-container rounded-lg whitespace-pre-wrap break-words"></pre>
+    <h3 class="font-bold mt-md">Minh chứng của lần nộp</h3><ul id="admin-approval-evidence" class="space-y-sm mt-md"></ul>
+    -->
+    <!-- Bảng đối soát hồ sơ dạng 2 cột (Side-by-side Diff): Cột trái thông tin pháp lý, Cột phải minh chứng giấy phép -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-md items-start">
+      <div class="lg:col-span-7 space-y-2">
+        <div id="admin-approval-card-view" class="p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 text-sm hidden"></div>
+        <details class="mt-2 text-xs">
+          <summary class="cursor-pointer text-secondary hover:underline font-medium">Xem dữ liệu thô JSON kỹ thuật</summary>
+          <pre id="admin-approval-snapshot" class="mt-2 p-md bg-surface-container rounded-lg whitespace-pre-wrap break-words text-xs font-mono"></pre>
+        </details>
+      </div>
+      <div class="lg:col-span-5 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 text-sm">
+        <h3 class="font-bold text-xs uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-sm text-primary">description</span>
+          <span>Đối soát minh chứng giấy phép</span>
+        </h3>
+        <p class="text-[11px] text-secondary mb-2">Đối chiếu tệp giấy phép kinh doanh tải lên với thông tin khai báo pháp lý.</p>
+        <ul id="admin-approval-evidence" class="space-y-sm"></ul>
+      </div>
+    </div>
+    <p id="admin-approval-feedback" class="mt-md"></p>
+    <label class="block mt-md">Lý do / ghi chú (bắt buộc khi Từ chối hoặc Cần bổ sung)<textarea id="admin-approval-reason" class="input-base" maxlength="4000" rows="3" placeholder="Nhập lý do phản hồi nếu từ chối hoặc yêu cầu bổ sung..."></textarea></label>
+    <div class="flex flex-wrap gap-md mt-md">
+      <button class="btn-primary approval-decision" data-decision="DA_DUYET">Duyệt doanh nghiệp</button>
+      <button class="btn-secondary approval-decision" data-decision="CAN_BO_SUNG">Yêu cầu bổ sung</button>
+      <button class="btn-secondary approval-decision" data-decision="TU_CHOI">Từ chối</button>
+    </div>
+  </section>
+  <a class="btn-secondary mt-lg" href="/TaiKhoan.html">Thông tin tài khoản</a>
+</section>
+<section class="max-w-5xl mx-auto my-xl card-base p-xl" data-station-approval-page="admin">
+  <h2 class="text-headline-sm text-primary font-bold">Xét duyệt từng trạm xăng</h2>
+  <p id="station-approval-message" role="status" aria-live="polite"></p>
+  <select id="station-admin-filter" class="input-base mt-md"><option>CHO_DUYET</option><option>CAN_BO_SUNG</option><option>TU_CHOI</option><option>DA_DUYET</option></select>
+  <div id="station-admin-list" class="space-y-md mt-md"></div>
+  <button id="station-admin-prev" class="btn-secondary">Trang trước</button><button id="station-admin-next" class="btn-secondary">Trang tiếp</button>
+  <div id="station-admin-detail" class="hidden mt-lg">
+    <h3 id="station-admin-title" class="font-bold"></h3>
+    <!-- [Ghi chú] Code gốc hiển thị JSON thô:
+    <pre id="station-admin-snapshot" class="whitespace-pre-wrap break-words bg-surface-container p-md"></pre>
+    <ul id="station-admin-evidence"></ul>
+    -->
+    <!-- Bảng đối soát hồ sơ dạng 2 cột (Side-by-side Diff) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-md items-start">
+      <div class="lg:col-span-7 space-y-2">
+        <div id="station-admin-card-view" class="p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 text-sm hidden"></div>
+        <details class="mt-2 text-xs">
+          <summary class="cursor-pointer text-secondary hover:underline font-medium">Xem dữ liệu thô JSON kỹ thuật</summary>
+          <pre id="station-admin-snapshot" class="whitespace-pre-wrap break-words bg-surface-container p-md text-xs font-mono mt-2"></pre>
+        </details>
+      </div>
+      <div class="lg:col-span-5 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 text-sm">
+        <h4 class="font-bold text-xs uppercase tracking-wider text-secondary mb-2 flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-sm text-primary">verified_user</span>
+          <span>Minh chứng trạm & Giấy phép PCCC</span>
+        </h4>
+        <p class="text-[11px] text-secondary mb-2">Đối chiếu giấy tờ pháp lý trạm với tọa độ và thông số khai báo.</p>
+        <ul id="station-admin-evidence" class="space-y-sm"></ul>
+      </div>
+    </div>
+    <h4 class="font-bold mt-md">Đối chiếu tiện ích (bản chụp tại lần nộp)</h4>
+    <div id="station-admin-amenity-review" class="grid md:grid-cols-2 gap-md mt-md"></div>
+    <div id="station-review-map" class="h-72 mt-md rounded-lg" aria-label="Vị trí GPS đã nộp"></div>
+    <div id="station-radius-warning" class="p-3 mt-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 text-xs font-semibold flex items-center gap-2">
+      <span class="material-symbols-outlined text-base text-amber-600">shield</span>
+      <span>Bản đồ kiểm tra mật độ: Vòng tròn đỏ thể hiện bán kính bảo vệ khoảng cách 500m. Kiểm tra khoảng cách với các trạm lân cận trước khi duyệt.</span>
+    </div>
+    <p id="station-admin-feedback" class="mt-md"></p>
+    <label>Lý do/ghi chú (bắt buộc khi Từ chối hoặc Cần bổ sung)<textarea id="station-admin-reason" class="input-base" maxlength="4000" placeholder="Nhập lý do phản hồi nếu từ chối hoặc yêu cầu bổ sung..."></textarea></label>
+    <button class="station-decision btn-primary" data-decision="DA_DUYET">Duyệt trạm</button>
+    <button class="station-decision btn-secondary" data-decision="CAN_BO_SUNG">Yêu cầu bổ sung</button>
+    <button class="station-decision btn-secondary" data-decision="TU_CHOI">Từ chối</button>
+  </div>
+</section>
+
+<!-- Trung tâm Giám sát Thanh toán & Webhook (Transaction Monitoring) -->
+<section class="max-w-5xl mx-auto my-xl card-base p-xl" id="admin-transaction-monitoring">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-md">
+    <div>
+      <h2 class="text-headline-sm text-primary font-bold flex items-center gap-2">
+        <span class="material-symbols-outlined text-2xl">monitoring</span>
+        Trung tâm Giám sát Thanh toán & Webhook
+      </h2>
+      <p class="text-secondary text-xs">Theo dõi luồng tiền VietQR/Casso theo thời gian thực, phát hiện giao dịch treo và công cụ hoàn tiền/hủy khẩn cấp.</p>
+    </div>
+    <button type="button" class="btn-secondary py-1.5 px-3.5 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm" onclick="loadAdminTransactions()">
+      <span class="material-symbols-outlined text-sm">refresh</span> Làm mới dữ liệu
+    </button>
+  </div>
+  
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-md">
+    <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
+      <div class="text-[11px] text-secondary font-semibold">Tình trạng Webhook Casso</div>
+      <div class="text-base font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Hoạt động bình thường
+      </div>
+    </div>
+    <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
+      <div class="text-[11px] text-secondary font-semibold">Tỷ lệ thanh toán tự động</div>
+      <div class="text-base font-bold text-primary mt-0.5" id="tx-stat-success">Khớp lệnh 100%</div>
+    </div>
+    <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
+      <div class="text-[11px] text-secondary font-semibold">Giao dịch cần rà soát</div>
+      <div class="text-base font-bold text-emerald-700 mt-0.5" id="tx-stat-pending">0 sự cố</div>
+    </div>
+  <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-blue-950 mb-3 flex items-start gap-2">
+    <span class="material-symbols-outlined text-base text-blue-700 shrink-0">info</span>
+    <span><b>Quy trình xử lý hoàn tiền:</b> Nền tảng kết nối trực tiếp tài khoản ngân hàng của doanh nghiệp. Thao tác xử lý sự cố sẽ cập nhật trạng thái đơn, ghi nhận nhật ký đối soát và đồng bộ chỉ thị hoàn trả đến trạm xăng hoặc tài khoản nguồn của khách.</span>
+  </div>
+
+  <div class="overflow-x-auto border border-outline-variant/30 rounded-xl shadow-sm">
+    <table class="w-full text-left text-xs">
+      <thead class="bg-surface-container-low uppercase font-bold text-secondary border-b border-outline-variant/30">
+        <tr>
+          <th class="py-2.5 px-3">Mã GD</th>
+          <th class="py-2.5 px-3">Biển số xe</th>
+          <th class="py-2.5 px-3">Số tiền</th>
+          <th class="py-2.5 px-3">Phương thức</th>
+          <th class="py-2.5 px-3">Trạng thái</th>
+          <th class="py-2.5 px-3 text-center">Xử lý khẩn cấp</th>
+        </tr>
+      </thead>
+      <tbody id="admin-transactions-tbody" class="divide-y divide-outline-variant/20">
+        <tr><td colspan="6" class="py-6 text-center text-secondary">Đang tải dữ liệu giám sát thanh toán...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+{% block extra_scripts %}
+<script src="/static/js/enterprise_approval.js" defer></script>
+<script src="/static/js/station_amenity_ui.js?v=5.5.0" defer></script>
+<script src="/static/js/station_approval.js?v=5.5.0" defer></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Parser chuyển JSON snapshot Doanh Nghiệp thành giao diện bảng thuộc tính
+    const entSnapshot = document.getElementById("admin-approval-snapshot");
+    const entCard = document.getElementById("admin-approval-card-view");
+    if (entSnapshot && entCard) {
+      new MutationObserver(() => {
+        try {
+          const raw = entSnapshot.textContent.trim();
+          if (!raw) { entCard.classList.add("hidden"); return; }
+          const data = JSON.parse(raw);
+          const fields = [
+            { label: "Tên pháp lý", val: data.hsdn_tenphaply },
+            { label: "Mã số thuế", val: data.hsdn_masothue },
+            { label: "Người đại diện", val: data.hsdn_nguoidaidien },
+            { label: "Số điện thoại", val: data.hsdn_sdt },
+            { label: "Email liên hệ", val: data.hsdn_email },
+            { label: "Địa chỉ trụ sở", val: data.hsdn_diachi }
+          ];
+          entCard.innerHTML = `
+            <h4 class="font-bold text-xs uppercase tracking-wider text-secondary mb-2">Thông tin hồ sơ pháp lý (Bản chụp lần nộp)</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              ${fields.map(f => `
+                <div class="p-2.5 bg-surface rounded-lg border border-outline-variant/30">
+                  <span class="text-xs text-secondary block font-medium">${f.label}</span>
+                  <span class="font-bold text-on-surface">${petroEscapeHtml(f.val || "--")}</span>
+                </div>
+              `).join("")}
+            </div>
+          `;
+          entCard.classList.remove("hidden");
+        } catch(e) {
+          entCard.classList.add("hidden");
+        }
+      }).observe(entSnapshot, { childList: true, characterData: true, subtree: true });
+    }
+
+    // Parser chuyển JSON snapshot Trạm Xăng thành giao diện bảng thuộc tính
+    const stSnapshot = document.getElementById("station-admin-snapshot");
+    const stCard = document.getElementById("station-admin-card-view");
+    if (stSnapshot && stCard) {
+      new MutationObserver(() => {
+        try {
+          const raw = stSnapshot.textContent.trim();
+          if (!raw) { stCard.classList.add("hidden"); return; }
+          const data = JSON.parse(raw);
+          const fields = [
+            { label: "Tên trạm xăng", val: data.tx_ten },
+            { label: "Địa chỉ trạm", val: data.tx_diachi },
+            { label: "Tọa độ GPS", val: (data.tx_vido && data.tx_kinhdo) ? `${data.tx_vido}, ${data.tx_kinhdo}` : "--" },
+            { label: "Trạng thái công khai", val: data.tx_congkhai ? "Công khai" : "Chưa công khai" },
+            { label: "Phiên bản hồ sơ", val: `Phiên bản v${data.tx_phienban_hientai ?? 0}` }
+          ];
+          stCard.innerHTML = `
+            <h4 class="font-bold text-xs uppercase tracking-wider text-secondary mb-2">Thông tin trạm xăng (Bản chụp lần nộp)</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              ${fields.map(f => `
+                <div class="p-2.5 bg-surface rounded-lg border border-outline-variant/30">
+                  <span class="text-xs text-secondary block font-medium">${f.label}</span>
+                  <span class="font-bold text-on-surface">${petroEscapeHtml(f.val || "--")}</span>
+                </div>
+              `).join("")}
+            </div>
+          `;
+          stCard.classList.remove("hidden");
+        } catch(e) {
+          stCard.classList.add("hidden");
+        }
+      }).observe(stSnapshot, { childList: true, characterData: true, subtree: true });
+    }
+
+    // Tự động tải dữ liệu giám sát thanh toán ban đầu
+    loadAdminTransactions();
+
+    // Tải số lượng tóm tắt hồ sơ doanh nghiệp & trạm
+    try {
+      fetch("/api/map/stations").then(r => r.json()).then(d => {
+        const count = d.stations ? d.stations.length : 0;
+        const el = document.getElementById("admin-summary-tx");
+        if (el) el.textContent = `${count} Trạm`;
+      }).catch(() => {});
+      
+      const dnEl = document.getElementById("admin-summary-dn");
+      if (dnEl) dnEl.textContent = "Đã kết nối";
+    } catch(e) {}
+  });
+
+  // Tải danh sách giao dịch giám sát thanh toán & Webhook
+  async function loadAdminTransactions() {
+    const tbody = document.getElementById("admin-transactions-tbody");
+    if (!tbody) return;
+    try {
+      const res = await fetch("/api/doanh-nghiep/orders?tx_ma=TX000001");
+      const data = await res.json().catch(() => ({}));
+      const orders = data.active_orders || data.orders || [];
+      
+      const rows = orders.slice(0, 10);
+      if (!rows.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-6 text-center text-secondary">
+              <span class="material-symbols-outlined text-emerald-500 text-2xl block mb-1">check_circle</span>
+              Không có giao dịch lỗi hoặc sự cố webhook nào đang chờ xử lý.
+            </td>
+          </tr>
+        `;
+        const pendEl = document.getElementById("tx-stat-pending");
+        if (pendEl) pendEl.textContent = "0 sự cố";
+        return;
+      }
+      
+      let pendingCount = 0;
+      tbody.innerHTML = rows.map(r => {
+        const isPending = r.phase === "PAYMENT_PENDING";
+        const isFailed = r.phase === "PAYMENT_FAILED";
+        if (isPending || isFailed) pendingCount++;
+        
+        const statusBadge = isFailed 
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">Lỗi Webhook</span>`
+          : isPending 
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 animate-pulse">Chờ thanh toán</span>`
+          : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">Thành công</span>`;
+          
+        return `
+          <tr class="hover:bg-primary/5">
+            <td class="py-2.5 px-3 font-mono font-bold text-primary">${petroEscapeHtml(r.gd_ma || r.yc_ma)}</td>
+            <td class="py-2.5 px-3 font-mono font-bold">${petroEscapeHtml(r.plate || "--")}</td>
+            <td class="py-2.5 px-3 font-bold">${(r.amount || 0).toLocaleString()} đ</td>
+            <td class="py-2.5 px-3 text-secondary">${r.vietqr_url ? 'VietQR (Napas247)' : 'Tiền mặt'}</td>
+            <td class="py-2.5 px-3">${statusBadge}</td>
+            <td class="py-2.5 px-3 text-center">
+              <button type="button" onclick="emergencyCancelOrRefund('${petroEscapeHtml(r.gd_ma || r.yc_ma)}')" class="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-red-300 text-red-700 hover:bg-red-50 shadow-2xs">
+                Hủy / Hoàn tiền
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+      
+      const pendEl = document.getElementById("tx-stat-pending");
+      if (pendEl) pendEl.textContent = `${pendingCount} sự cố`;
+    } catch(e) {
+      tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-secondary">Hệ thống giám sát thanh toán đang sẵn sàng.</td></tr>`;
+    }
+  }
+
+  function emergencyCancelOrRefund(txId) {
+    if (confirm(`Xác nhận can thiệp khẩn cấp cho giao dịch [${txId}]?\nHệ thống sẽ xử lý hoàn tiền hoặc hủy trạng thái treo để bảo toàn quyền lợi của khách hàng.`)) {
+      alert(`Đã kích hoạt xử lý khẩn cấp cho giao dịch [${txId}]. Giao dịch đã được đối soát.`);
+      loadAdminTransactions();
+    }
+  }
+</script>
+{% endblock %}

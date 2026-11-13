@@ -1,0 +1,47 @@
+{
+  "format_version": 1,
+  "purpose": "Machine-neutral reviewed source/catalog and clean test-data reference; restricted developer setup and separate owner approval. No machine identity or credentials.",
+  "source_hash_normalization": "CRLF to LF only; private runtime bindings still pin exact local bytes",
+  "postgresql_major": 16,
+  "schema_version": "PETRO_SCHEMA_35_REFERENCE_V1 with reviewed self-service CHECK",
+  "source_sha256": {
+    "app/core/development_deployment.py": "9943e2317eb626d5bd73db515b893049154faf75671405307fe24b85a7d29b41",
+    "app/core/development_startup.py": "2b8a436504c6b4a4cdc71322755b39218c0cd818d1e233089eae4a5d56d8f030",
+    "app/core/operational_mode.py": "247e353e5e4236e9562aa2e1498d345e2adfded66ba4a47860dc053dda52dae7",
+    "app/core/published_price_schema.py": "a4d83f67ff70394e06ba5a331f123d3d19fb11a2013bd892e8c671ffb6757dcc",
+    "app/core/published_price_schema.json": "417b2733eb3455e4633a66b8d9946438a95a8f8ee8ff83132373b40cd5b85089",
+    "app/core/station_self_service_schema.json": "9aff091e2c2f40fcefd398e960b46508ae4b449cae79a2363d359c6ced9aaf6b",
+    "app/core/workflow_status.py": "439640e4e742b18ac036ed11f510dc552a3b97307a6f7d6a1ca36f3f7c5268bb",
+    "app/services/operational_service.py": "c0175d6b58fba9729ceaeda89237660808939bdf882b3c383baebce2567e0518",
+    "app/services/request_lifecycle.py": "e6538323cffde74a5c39c3da3ffe3e6ba80d8ab2a2d51b5283a2d43539d87f94",
+    "app/services/request_expiry.py": "02af5eaaa95b97bd3f318a73e0cee8cae602f5612cf35585f88361a5a373d7c2",
+    "scripts/expire_fuel_requests.py": "ef8d8f5d0e244a45cc81028a572a92876dc53c0ba3d8b63cd6e27ac6a5f427c5",
+    "proposals/phase58/worker_supervisor.py": "75e87837cf1d8d7633012b7a6c3d03715684ed0f35909b74fc5e428346562956",
+    "proposals/phase58/manage_expiry58b.py": "b83943c67a9b9af52fb22ff431837da6b7663f55ee230a198f5f5393c35509bb",
+    "proposals/phase58/run_development58b.py": "adf2f5ba04b510304831b1dce34e1172d810a30005ad1f7e44c80cd33c2578b7",
+    "scripts/run_petro_dev.py": "fe4e177dc4a8c4a62c85021626b9907e648bdfa81aa84a122e80c92d4057a94d",
+    "app/core/local_dev_profile.py": "7b2f3399a6759795f613c6077a2ffa5d1276099a4cfcfe3d2368acc7aef76785",
+    "app/services/casso_integration.py": "c60a716609b88890214442a8a3f33ca8630128788d0ae763300f93896124d305",
+    "proposals/phase58/LOCAL_DEV_DATA_PROFILE.json": "338523959787e622396f907e7c5ef88de5c514d016d94a8f69cd285a6216b4b7",
+    "proposals/phase58/local_dev_starter.sql": "fd583c9234a6b237b1178194a193eb36b68802e0758fccc2581b1407c6b1770c",
+    "proposals/phase58/local_dev_schema.sql": "54f539d028cab0436709c0df4e208b63d24821b038d01eca2bab241930e68a70"
+  },
+  "catalog_sha256": {
+    "functions": {
+      "phase57_immutable_guard()": "e19e682e2723e52ebb5889a0f3f57dba4eac0ecff4590af19a1f3acf186032cc",
+      "phase57_scope_guard()": "0c7e94c47691c747072c1a907bb30399b5626e4ec64a2216d989c1c30eba1c49"
+    },
+    "triggers": {
+      "bien_dong_kho.trg_bd_immutable": "9f71b31ba292c17894ca13cefb83e468be9b0810473e595afadb308c17eb4ba3",
+      "bien_dong_kho.trg_bd_scope": "f684eb4854b96726c80fa51875e97bb53f1bfbeca7fbdf0839c2ca13089d0b73",
+      "bon_chua.trg_bc_immutable": "af8cf3b6d968bce95b2cd026cde9bc4fed5940d0b1b9319bfe1f323a038186e8",
+      "giu_cho_nhien_lieu.trg_gc_immutable": "0a77729e26a40ba374dceb11b3534ee8d277f3be693a0a5c3665acb7e44814f5",
+      "giu_cho_nhien_lieu.trg_gc_scope": "3972abf31cb654ff6708b3c4496422eefa45f459aecfe61601c45eed0a3715f7",
+      "tru_bom.trg_tb_immutable": "935727ac854312b056d1ec18e3439f45c3167c5eae9d12aa0f9446828345a13e",
+      "tru_bom.trg_tb_scope": "b364a55606e4fc5dd37b2d076742eecee085543ae859f82a5583c06fb18587d9"
+    },
+    "views": {
+      "v_tram_xang_cong_khai": "13169ea3142a2a1ece538ec110d1b570cf727eeb89868a9901aa9bb26dbd01d4"
+    }
+  }
+}

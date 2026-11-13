@@ -1,0 +1,294 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Giá xăng dầu tham chiếu - Petro{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<main class="max-w-7xl mx-auto px-container-margin py-lg md:py-xl">
+  <div class="mb-lg md:mb-xl space-y-3 text-left">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div>
+        <h1 id="fuel-page-title" class="text-display-lg font-bold text-on-background">Giá xăng dầu tham chiếu</h1>
+        <p class="text-body-md text-secondary mt-1">Thông tin giá nhiên liệu niêm yết theo chu kỳ điều hành của Petrolimex (Vùng 2).</p>
+        <p id="fuel-price-effective" class="text-xs text-secondary mt-1">Cập nhật gần nhất: --</p>
+      </div>
+      <!-- Badges trạng thái nguồn & đồng bộ & nút làm mới -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="fuel-price-source">Đang tải nguồn dữ liệu...</span>
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-container text-secondary border border-outline-variant/40 shadow-sm">
+          <span class="material-symbols-outlined text-[15px]">sync</span>
+          <span id="fuel-price-sync">Tự động đồng bộ</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Thông báo lưu ý / ghi chú tham chiếu tinh tế -->
+    <div class="p-3 bg-surface-container-low/80 border border-outline-variant/30 rounded-xl flex items-start gap-2.5 text-xs text-secondary max-w-3xl">
+      <span class="material-symbols-outlined text-[18px] text-primary shrink-0 mt-0.5">info</span>
+      <div class="space-y-0.5">
+        <p>Giá tham chiếu mang tính định hướng; giá bán thực tế tại các trạm xăng có thể chênh lệch theo quy định thương mại.</p>
+        <p class="text-[11px] text-outline">Chênh lệch được tính so với kỳ điều chỉnh gần nhất ghi nhận trên hệ thống.</p>
+        <p id="fuel-price-history-message" class="text-[11px] text-primary font-medium" role="status"></p>
+      </div>
+    </div>
+    <p id="fuel-price-error" class="hidden mt-sm text-error font-medium">Không thể tải dữ liệu giá lúc này.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-md md:gap-lg mb-xl">
+    <article class="card-base p-md md:p-lg flex flex-col justify-between" data-fuel-id="NL000001">
+      <div>
+        <div class="flex justify-between items-start mb-sm gap-sm">
+          <h2 class="text-title-lg font-bold text-on-surface">Xăng E10 RON 95-III</h2>
+          <span id="fuel-e10-badge" class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container-low text-secondary text-label-md font-medium">
+            <span class="material-symbols-outlined text-[16px] mr-1">trending_flat</span>
+            <span id="fuel-e10-change">--</span>
+          </span>
+        </div>
+        <div id="fuel-e10-current" class="text-display-lg font-bold text-primary mb-xs">--</div>
+        <div class="text-body-md text-secondary">Kỳ trước cùng nguồn: <span id="fuel-e10-previous">--</span></div>
+      </div>
+      <div class="mt-md pt-md border-t border-outline-variant flex justify-between items-center text-secondary text-label-md gap-sm">
+        <span id="fuel-e10-updated">Chưa có dữ liệu</span>
+        <span id="fuel-e10-percent">--</span>
+      </div>
+    </article>
+
+    <article class="card-base p-md md:p-lg flex flex-col justify-between" data-fuel-id="NL000002">
+      <div>
+        <div class="flex justify-between items-start mb-sm gap-sm">
+          <h2 class="text-title-lg font-bold text-on-surface">E5 RON 92-II</h2>
+          <span id="fuel-e5-badge" class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container-low text-secondary text-label-md font-medium">
+            <span class="material-symbols-outlined text-[16px] mr-1">trending_flat</span>
+            <span id="fuel-e5-change">--</span>
+          </span>
+        </div>
+        <div id="fuel-e5-current" class="text-display-lg font-bold text-primary mb-xs">--</div>
+        <div class="text-body-md text-secondary">Kỳ trước cùng nguồn: <span id="fuel-e5-previous">--</span></div>
+      </div>
+      <div class="mt-md pt-md border-t border-outline-variant flex justify-between items-center text-secondary text-label-md gap-sm">
+        <span id="fuel-e5-updated">Chưa có dữ liệu</span>
+        <span id="fuel-e5-percent">--</span>
+      </div>
+    </article>
+
+    <article class="card-base p-md md:p-lg flex flex-col justify-between" data-fuel-id="NL000003">
+      <div>
+        <div class="flex justify-between items-start mb-sm gap-sm">
+          <h2 class="text-title-lg font-bold text-on-surface">Diesel DO 0,05S-II</h2>
+          <span id="fuel-do-badge" class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container-low text-secondary text-label-md font-medium">
+            <span class="material-symbols-outlined text-[16px] mr-1">trending_flat</span>
+            <span id="fuel-do-change">--</span>
+          </span>
+        </div>
+        <div id="fuel-do-current" class="text-display-lg font-bold text-primary mb-xs">--</div>
+        <div class="text-body-md text-secondary">Kỳ trước cùng nguồn: <span id="fuel-do-previous">--</span></div>
+      </div>
+      <div class="mt-md pt-md border-t border-outline-variant flex justify-between items-center text-secondary text-label-md gap-sm">
+        <span id="fuel-do-updated">Chưa có dữ liệu</span>
+        <span id="fuel-do-percent">--</span>
+      </div>
+    </article>
+  </div>
+
+  <section class="card-base p-md md:p-lg mb-xl">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-md gap-sm">
+      <h2 class="text-headline-sm font-bold text-on-surface">Lịch sử các kỳ điều chỉnh</h2>
+      <div id="history-periods" class="flex gap-2 bg-surface-container p-1 rounded-lg">
+        <button data-days="7" class="period-button px-3 py-1 rounded-md text-label-md text-secondary hover:bg-surface-container-low transition-colors">7 ngày</button>
+        <button data-days="30" class="period-button px-3 py-1 rounded-md text-label-md text-primary bg-surface-container-lowest shadow-sm font-bold">30 ngày</button>
+        <button data-days="90" class="period-button px-3 py-1 rounded-md text-label-md text-secondary hover:bg-surface-container-low transition-colors">3 tháng</button>
+        <button data-days="180" class="period-button px-3 py-1 rounded-md text-label-md text-secondary hover:bg-surface-container-low transition-colors">6 tháng</button>
+      </div>
+    </div>
+    <div class="relative w-full h-72">
+      <canvas id="fuelPriceChart" aria-label="Biểu đồ lịch sử giá nhiên liệu"></canvas>
+    </div>
+    <p id="fuel-history-empty" class="hidden text-center text-secondary py-lg">Chưa có lịch sử giá trong khoảng thời gian này.</p>
+  </section>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/fuel_price_ui.js?v=5.4"></script>
+<script>
+  const fuelCardKeys = {
+    NL000001: "e10",
+    NL000002: "e5",
+    NL000003: "do"
+  };
+  const chartLabels = {
+    NL000001: "Xăng E10 RON 95-III",
+    NL000002: "E5 RON 92-II",
+    NL000003: "Diesel DO 0,05S-II"
+  };
+  const chartColors = {
+    NL000001: "#006c49",
+    NL000002: "#e29100",
+    NL000003: "#545f73"
+  };
+  const moneyFormatter = new Intl.NumberFormat("vi-VN");
+  let fuelPriceChart = null;
+  let currentDays = 30, loadingPrices = false;
+  let lastVisibleRefresh = 0;
+
+
+  function formatMoney(value) {
+    return value == null ? "--" : `${moneyFormatter.format(value)} đ/L`;
+  }
+
+  function formatEffectiveDate(dateValue, timeValue) {
+    if (!dateValue) return "Chưa có dữ liệu";
+    const [year, month, day] = dateValue.split("-");
+    return `Kỳ áp dụng: ${timeValue ? `${timeValue}, ` : ""}${day}/${month}/${year}`;
+  }
+
+  function updatePriceCard(item, latest) {
+    const key = fuelCardKeys[item.fuel_id];
+    if (!key) return;
+    document.getElementById(`fuel-${key}-current`).textContent = formatMoney(item.current_price);
+    document.getElementById(`fuel-${key}-previous`).textContent = formatMoney(item.previous_price) +
+      (item.previous_effective_date ? ` (${item.previous_effective_date.split('-').reverse().join('/')})` : '');
+    document.getElementById(`fuel-${key}-updated`).textContent = formatEffectiveDate(
+      latest.effective_date,
+      latest.effective_time
+    );
+    const change = item.change_vnd;
+    const icon = change > 0 ? "trending_up" : change < 0 ? "trending_down" : "trending_flat";
+    const changeText = change == null ? "--" : `${moneyFormatter.format(change)} đ`;
+    const badge = document.getElementById(`fuel-${key}-badge`);
+    badge.querySelector(".material-symbols-outlined").textContent = icon;
+    document.getElementById(`fuel-${key}-change`).textContent = changeText;
+    document.getElementById(`fuel-${key}-percent`).textContent =
+      item.change_percent == null ? "--" : `${moneyFormatter.format(item.change_percent)}%`;
+    badge.classList.remove("text-error", "text-primary", "text-secondary");
+    badge.classList.add(change > 0 ? "text-error" : change < 0 ? "text-primary" : "text-secondary");
+  }
+
+  function renderHistoryChart(series) {
+    const canvas = document.getElementById("fuelPriceChart");
+    const empty = document.getElementById("fuel-history-empty");
+    // Only database rows for one source; never manufacture missing periods.
+    const observed = [...new Set(Object.values(series).flatMap(points =>
+      points.map(point => `${point.date}|${point.effective_time || ''}`)))].sort();
+    // Each observed official price remains effective until the next verified
+    // published period. Do not invent daily prices or break valid weekly steps.
+    const periods = observed;
+    empty.classList.toggle("hidden", observed.length > 0);
+    canvas.classList.toggle("hidden", observed.length === 0);
+    if (fuelPriceChart) fuelPriceChart.destroy();
+    fuelPriceChart = null;
+    if (!periods.length) return;
+    if (observed.length===1) {empty.textContent='Chưa có đủ kỳ giá để thể hiện biến động';empty.classList.remove('hidden');}
+    else empty.textContent='Chưa có lịch sử giá trong khoảng thời gian này.';
+    const datasets = Object.keys(chartLabels).map(fuelId => {
+      const byPeriod = new Map((series[fuelId] || []).map(point =>
+        [`${point.date}|${point.effective_time || ''}`, point.price]));
+      return {label:chartLabels[fuelId], data:periods.map(key => byPeriod.get(key) ?? null),
+        borderColor:chartColors[fuelId], backgroundColor:chartColors[fuelId],
+        stepped:true, spanGaps:false, tension:0, pointRadius:4};
+    });
+    fuelPriceChart = new Chart(canvas, {
+      type:'line',
+      data:{labels:periods.map(key => {const [day,time]=key.split('|');
+        return day.split('-').reverse().join('/') + (time ? ` ${time.slice(0,5)}` : '');}),datasets},
+      options:{responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{tooltip:{callbacks:{label:context => `${context.dataset.label}: ${formatMoney(context.parsed.y)}`}}},
+        scales:{y:{ticks:{callback:value => `${moneyFormatter.format(value)} đ/L`}}}}
+    });
+  }
+
+  async function loadFuelData(days = 30, {force = false} = {}) {
+    currentDays = days;
+    if (loadingPrices) return;
+    loadingPrices = true;
+    const refreshButton = document.getElementById('fuel-refresh');
+    if (refreshButton) {
+      refreshButton.disabled = true;
+      refreshButton.setAttribute('aria-busy', 'true');
+      refreshButton.textContent = 'Đang kiểm tra nguồn…';
+    }
+    document.getElementById('fuel-price-sync').textContent = 'Đang kiểm tra giá tham chiếu Petrolimex/PVOIL…';
+    const errorMessage = document.getElementById("fuel-price-error");
+    errorMessage.classList.add("hidden");
+    try {
+      // History must be requested after /latest finishes persistence, otherwise
+      // the chart can miss the period just inserted by this same page load.
+      const latestResponse = await fetch(`/api/fuel-prices/latest${force ? "?refresh=true" : ""}`, {cache: 'no-store'});
+      if (!latestResponse.ok) throw new Error('Fuel price API failed');
+      const latest = await latestResponse.json();
+      const selectedSource = 'petrolimex';
+      const historyResponse = await fetch(`/api/fuel-prices/history?days=${days}&source=${selectedSource}`, {cache:'no-store'});
+      if (!historyResponse.ok) throw new Error('History API failed');
+      const history = await historyResponse.json();
+      if (!latest.items.length) Object.keys(fuelCardKeys).forEach(fuel_id => updatePriceCard({
+        fuel_id,current_price:null,previous_price:null,change_vnd:null,change_percent:null},latest));
+      latest.items.forEach(item => updatePriceCard(item, latest));
+      const names = {petrolimex:'Petrolimex Vùng 2',pvoil:'PVOIL',database_fallback:'Chưa có dữ liệu'};
+      const titleElem = document.getElementById('fuel-page-title');
+      if (titleElem) titleElem.textContent = latest.source === 'pvoil' ? 'Giá xăng dầu PVOIL' : 'Giá xăng dầu Petrolimex – Vùng 2';
+      const sourceElem = document.getElementById('fuel-price-source');
+      if (sourceElem) sourceElem.textContent = `Nguồn: ${names[latest.source] || 'Chưa có dữ liệu'}`;
+      const effectiveElem = document.getElementById('fuel-price-effective');
+      if (effectiveElem) {
+        effectiveElem.textContent = latest.effective_date ?
+          formatEffectiveDate(latest.effective_date,latest.effective_time).replace('Kỳ áp dụng:','Cập nhật gần nhất:') : 'Cập nhật gần nhất: --';
+      }
+      const sync = document.getElementById('fuel-price-sync');
+      if (sync) {
+        sync.textContent = latest.sync_error ? 'Chưa kiểm tra được nguồn mới. Đang hiển thị dữ liệu đã lưu.' :
+          latest.persistence_status === 'blocked' ? 'Đã kiểm tra giá. Chưa thể lưu lịch sử.' :
+          latest.persistence_status === 'persisted' ? 'Đã cập nhật kỳ giá mới.' : 'Đang hiển thị kỳ giá mới nhất đã lưu.';
+        if (latest.is_stale) sync.textContent += ' Giá có thể đã cũ.';
+        if (force && latest.is_cached && latest.persistence_status!=='blocked')
+          sync.textContent = 'Nguồn vừa được kiểm tra. Có thể kiểm tra lại sau ít nhất 30 giây.';
+      }
+      const historyMsg = document.getElementById('fuel-price-history-message');
+      if (historyMsg) historyMsg.textContent = latest.history_message || '';
+      renderHistoryChart(history.series || {});
+    } catch (error) {
+      console.error("Không thể tải dữ liệu giá:", error);
+      errorMessage.textContent = 'Không tải được API giá/lịch sử. Vui lòng kiểm tra kết nối và thử lại.';
+      errorMessage.classList.remove("hidden");
+    } finally {
+      loadingPrices = false;
+      if (refreshButton) {
+        refreshButton.disabled = false;
+        refreshButton.setAttribute('aria-busy', 'false');
+        refreshButton.textContent = 'Kiểm tra kỳ giá mới';
+      }
+      if (days !== currentDays) loadFuelData(currentDays);
+    }
+  }
+
+  document.querySelectorAll(".period-button").forEach(button => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".period-button").forEach(item => {
+        item.classList.remove("text-primary", "bg-surface-container-lowest", "shadow-sm", "font-bold");
+        item.classList.add("text-secondary");
+      });
+      button.classList.remove("text-secondary");
+      button.classList.add("text-primary", "bg-surface-container-lowest", "shadow-sm", "font-bold");
+      loadFuelData(Number(button.dataset.days));
+    });
+  });
+
+  document.getElementById('fuel-refresh')?.addEventListener('click', () => loadFuelData(currentDays, {force:true}));
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && Date.now() - lastVisibleRefresh > 60000) {
+      lastVisibleRefresh = Date.now();
+      loadFuelData(currentDays);
+    }
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    lastVisibleRefresh = Date.now();
+    loadFuelData(currentDays);
+  });
+</script>
+{% endblock %}

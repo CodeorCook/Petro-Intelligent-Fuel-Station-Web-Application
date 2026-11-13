@@ -1,0 +1,97 @@
+{% extends "layouts/base.html" %}
+{% block title %}Trạng thái doanh nghiệp - Petro{% endblock %}
+{% block content %}
+<section class="max-w-4xl mx-auto my-xl card-base p-xl" data-approval-page="enterprise">
+  <h1 class="text-headline-md text-primary font-bold mb-md">Tài khoản doanh nghiệp</h1>
+  <p class="text-body-lg mb-md">Trạng thái: <strong id="enterprise-approval-status">{{ enterprise_status }}</strong></p>
+  {% if enterprise_status == 'DA_DUYET' %}
+  <p>Doanh nghiệp đã được duyệt.</p>
+  {% elif enterprise_status == 'TAM_KHOA' %}
+  <p>Tài khoản đang bị khóa quyền quản lý trạm. Vui lòng liên hệ nhóm hỗ trợ Petro.</p>
+  {% else %}
+  <p>Tài khoản đã được tạo. Doanh nghiệp cần hoàn thiện hồ sơ pháp lý và được duyệt trước khi quản lý trạm.</p>
+  <p class="mt-md text-secondary">Nhập hồ sơ pháp lý, tải minh chứng và gửi quản trị viên xét duyệt. Định dạng hợp lệ không có nghĩa thông tin đã được xác minh.</p>
+  {% endif %}
+  <p id="approval-message" class="mt-md text-secondary" role="status" aria-live="polite"></p>
+  <a id="approved-stations-link" class="hidden btn-primary mt-md" href="/QuanLyTram.html">Quản lý trạm</a>
+  <form id="enterprise-profile-form" class="grid md:grid-cols-2 gap-md mt-lg">
+    <label>Tên pháp lý<input class="input-base" name="hsdn_tenphaply" maxlength="128" autocomplete="organization"></label>
+    <label>Mã số thuế<input class="input-base" name="hsdn_masothue" maxlength="20" placeholder="10 chữ số hoặc mã chi nhánh"></label>
+    <label class="md:col-span-2">Địa chỉ<input class="input-base" name="hsdn_diachi" maxlength="256" autocomplete="street-address"></label>
+    <label>Người đại diện<input class="input-base" name="hsdn_nguoidaidien" maxlength="128" autocomplete="name"></label>
+    <label>Điện thoại liên hệ<input class="input-base" name="hsdn_sodienthoai" maxlength="11" type="tel" autocomplete="tel"></label>
+    <label>Email liên hệ<input class="input-base" name="hsdn_email" maxlength="128" type="email" autocomplete="email"></label>
+    <button id="save-enterprise-draft" class="btn-secondary" type="submit">Lưu nháp</button>
+  </form>
+  <div class="mt-lg border-t pt-md">
+    <h2 class="text-title-lg font-bold">Minh chứng riêng tư</h2>
+    <p class="text-secondary text-sm">Giấy đăng ký doanh nghiệp hoặc tài liệu pháp lý: PDF, PNG, JPEG; tối đa 5 MB/tệp, 10 tệp/lần nộp. Tệp nháp hết hạn sau 24 giờ.</p>
+    
+    <!-- [Ghi chú] Code gốc bị tách rời 2 thành phần:
+    <input id="enterprise-evidence-file" type="file" accept=".pdf,.png,.jpg,.jpeg" class="mt-md">
+    <button id="upload-enterprise-evidence" type="button" class="btn-secondary mt-md">Tải minh chứng</button>
+    -->
+    <!-- Khối tải minh chứng thống nhất liền mạch -->
+    <div class="mt-md p-4 rounded-2xl border-2 border-dashed border-outline-variant/60 bg-surface-container-low/40 hover:border-primary/40 transition-colors shadow-sm">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3 flex-grow min-w-0">
+          <label for="enterprise-evidence-file" id="btn-browse-enterprise-evidence" class="btn-secondary py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:border-primary hover:text-primary transition-colors shrink-0 shadow-sm">
+            <span class="material-symbols-outlined text-sm">attach_file</span>
+            <span>Chọn tệp</span>
+          </label>
+          <input id="enterprise-evidence-file" type="file" accept=".pdf,.png,.jpg,.jpeg" class="hidden">
+          <div class="flex flex-col min-w-0">
+            <span id="enterprise-evidence-filename" class="text-xs font-medium text-secondary truncate">Chưa chọn tệp nào</span>
+            <span class="text-[10px] text-secondary/70">Định dạng hỗ trợ: PDF, PNG, JPEG (tối đa 5 MB)</span>
+          </div>
+        </div>
+        <button id="upload-enterprise-evidence" type="button" class="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm shrink-0 whitespace-nowrap">
+          <span class="material-symbols-outlined text-sm">cloud_upload</span>
+          <span>Tải minh chứng</span>
+        </button>
+      </div>
+    </div>
+
+    <ul id="enterprise-staging-list" class="space-y-sm mt-md"></ul>
+    <button id="submit-enterprise-approval" type="button" class="btn-primary mt-md">Gửi xét duyệt</button>
+  </div>
+  <h2 class="text-title-lg font-bold mt-lg">Lịch sử nộp và phản hồi</h2>
+  <div id="enterprise-approval-history" class="space-y-md mt-md"></div>
+  <a class="btn-secondary mt-lg" href="/TaiKhoan.html">Thông tin tài khoản</a>
+</section>
+{% endblock %}
+{% block extra_scripts %}
+<script src="/static/js/enterprise_approval.js" defer></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const fileInput = document.getElementById("enterprise-evidence-file");
+    const filenameEl = document.getElementById("enterprise-evidence-filename");
+    const uploadBtn = document.getElementById("upload-enterprise-evidence");
+
+    if (fileInput && filenameEl) {
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files[0]) {
+          const f = fileInput.files[0];
+          const mb = (f.size / (1024 * 1024)).toFixed(2);
+          filenameEl.textContent = `${f.name} (${mb} MB)`;
+          filenameEl.className = "text-xs font-bold text-primary truncate";
+        } else {
+          filenameEl.textContent = "Chưa chọn tệp nào";
+          filenameEl.className = "text-xs font-medium text-secondary truncate";
+        }
+      });
+
+      if (uploadBtn) {
+        uploadBtn.addEventListener("click", () => {
+          setTimeout(() => {
+            if (!fileInput.value) {
+              filenameEl.textContent = "Chưa chọn tệp nào";
+              filenameEl.className = "text-xs font-medium text-secondary truncate";
+            }
+          }, 800);
+        });
+      }
+    }
+  });
+</script>
+{% endblock %}

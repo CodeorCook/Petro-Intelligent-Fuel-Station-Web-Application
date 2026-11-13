@@ -1,0 +1,37 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Xác nhận đăng xuất - Petro{% endblock %}
+
+{% block content %}
+<main class="flex-grow flex items-center justify-center p-md py-xl min-h-[calc(100vh-140px)]">
+  <!-- Modal Card -->
+  <div class="card-base shadow-xl w-full max-w-sm flex flex-col p-lg md:p-xl items-center text-center border border-outline-variant/40 bg-surface-container-lowest">
+    <div class="w-16 h-16 rounded-full bg-error/10 text-error flex items-center justify-center mb-md border-2 border-error/20">
+      <span class="material-symbols-outlined text-[32px]">logout</span>
+    </div>
+    <h1 class="text-headline-sm font-bold text-on-surface mb-xs">Đăng xuất tài khoản?</h1>
+    <p class="text-body-md text-on-surface-variant mb-lg">Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc hiện tại?</p>
+
+    <div class="flex gap-md w-full">
+      <a href="/TaiKhoan.html" class="btn-secondary flex-1 text-center py-2.5 font-bold rounded-xl shadow-sm">Hủy</a>
+      <button type="button" onclick="performLogout()" class="btn-primary bg-error text-on-error hover:bg-error/90 flex-1 text-center py-2.5 font-bold rounded-xl shadow-md">
+        Đăng xuất
+      </button>
+    </div>
+  </div>
+</main>
+
+<script>
+  async function performLogout() {
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+      if (!response.ok) throw new Error("Đăng xuất không thành công. Vui lòng thử lại.");
+      localStorage.removeItem("petro_user");
+      localStorage.removeItem("petro_token");
+      window.location.href = "/DangNhap.html";
+    } catch (e) {
+      alert("Không thể đăng xuất lúc này. Vui lòng kiểm tra mạng và thử lại.");
+    }
+  }
+</script>
+{% endblock %}

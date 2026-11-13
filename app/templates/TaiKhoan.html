@@ -1,0 +1,337 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Tài khoản - Petro{% endblock %}
+
+{% block content %}
+<main class="flex-grow w-full max-w-7xl mx-auto px-container-margin md:px-lg py-lg md:py-xl space-y-xl">
+  <!-- Account Overview Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+    <!-- Profile Summary Sidebar -->
+    <section class="lg:col-span-4 card-base p-lg flex flex-col items-center text-center border border-outline-variant/30 shadow-sm bg-surface-container-lowest">
+      <div class="relative w-28 h-28 mb-md group">
+        <div class="w-full h-full rounded-full bg-primary/10 text-primary border-4 border-surface-container-low flex items-center justify-center shadow-md">
+          <span class="material-symbols-outlined text-6xl">person</span>
+        </div>
+      </div>
+      <div id="acc-role-badge" class="mb-2 px-3 py-0.5 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
+        Khách hàng
+      </div>
+      <h2 class="text-title-lg font-bold text-on-surface" id="acc-full-name">Đang tải...</h2>
+      <p class="text-body-md text-secondary font-mono" id="acc-username">@username</p>
+      <p class="text-xs text-secondary mt-1" id="acc-email">email@example.com</p>
+      <p class="text-xs text-secondary font-mono" id="acc-phone">0901234567</p>
+      <div id="acc-vehicles-box" class="mt-2 hidden">
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+          <span class="material-symbols-outlined text-sm">directions_car</span>
+          <!-- [Ghi chú] Nhãn cũ: <span id="txt-vehicle-count">0 phương tiện</span> -->
+          <span id="txt-vehicle-count">0 xe ô tô</span>
+        </span>
+      </div>
+      
+      <div class="w-full mt-md pt-md border-t border-outline-variant/30 flex flex-col gap-2">
+        <a href="/ChinhSuaThongTin.html" id="btn-edit-profile" class="btn-secondary w-full py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm hover:border-primary">
+          <span class="material-symbols-outlined text-base" id="icon-edit-profile">directions_car</span>
+          <span id="text-edit-profile">Chỉnh sửa thông tin & Quản lý xe</span>
+        </a>
+        <a href="/DangXuat.html" class="btn-secondary w-full py-2.5 text-xs font-bold rounded-xl text-error border-error/30 hover:bg-error/10 flex items-center justify-center gap-1.5 shadow-sm">
+          <span class="material-symbols-outlined text-base">logout</span>
+          Đăng xuất
+        </a>
+      </div>
+    </section>
+
+    <!-- Menu Section Grid -->
+    <section class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-md">
+      
+      <!-- Enterprise-only action card: Quản lý trạm -->
+      <a id="card-enterprise-dashboard" class="hidden md:col-span-2 group card-base p-md border-2 border-blue-300 bg-blue-50/50 hover:bg-blue-50 transition-all flex items-center gap-4 rounded-2xl shadow-sm" href="/QuanLyTram.html">
+        <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xl shadow-sm">
+          <span class="material-symbols-outlined">storefront</span>
+        </div>
+        <div class="flex-grow">
+          <div class="flex items-center gap-2">
+            <h3 class="text-title-md font-bold text-blue-900">Quản Lý Trạm Xăng Doanh Nghiệp</h3>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-200 text-blue-800 uppercase">Doanh nghiệp</span>
+          </div>
+          <p class="text-body-sm text-blue-700">Theo dõi trụ bơm, bồn chứa ngầm, bảng giá và đối soát doanh thu</p>
+        </div>
+        <span class="material-symbols-outlined text-blue-700 group-hover:translate-x-1 transition-transform">chevron_right</span>
+      </a>
+
+      <!-- Enterprise-only action card: Tiếp nhận & POS -->
+      <a id="card-enterprise-tiepnhan" class="hidden md:col-span-2 group card-base p-md border-2 border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 transition-all flex items-center gap-4 rounded-2xl shadow-sm" href="/TiepNhanBom.html">
+        <div class="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-sm">
+          <span class="material-symbols-outlined">local_gas_station</span>
+        </div>
+        <div class="flex-grow">
+          <div class="flex items-center gap-2">
+            <h3 class="text-title-md font-bold text-emerald-950">Màn Hình Tiếp Nhận & Bơm Xăng (POS)</h3>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-200 text-emerald-800 uppercase">Trực Ca</span>
+          </div>
+          <p class="text-body-sm text-emerald-700">Phục vụ xe tại cột bơm, chốt số lít thực tế và xuất hóa đơn thu ngân</p>
+        </div>
+        <span class="material-symbols-outlined text-emerald-700 group-hover:translate-x-1 transition-transform">chevron_right</span>
+      </a>
+
+      <!-- Enterprise-only action card: Hồ sơ doanh nghiệp -->
+      <a id="card-enterprise-hsdn" class="hidden md:col-span-2 group card-base p-md border-2 border-amber-300 bg-amber-50/50 hover:bg-amber-50 transition-all flex items-center gap-4 rounded-2xl shadow-sm" href="/TrangThaiDoanhNghiep.html">
+        <div class="w-12 h-12 rounded-xl bg-amber-600 text-white flex items-center justify-center text-xl shadow-sm">
+          <span class="material-symbols-outlined">business</span>
+        </div>
+        <div class="flex-grow">
+          <div class="flex items-center gap-2">
+            <h3 class="text-title-md font-bold text-amber-950">Hồ Sơ Doanh Nghiệp & Đăng Ký Trạm</h3>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-800 uppercase">Pháp Lý</span>
+          </div>
+          <p class="text-body-sm text-amber-700">Quản lý giấy phép pháp lý và nộp hồ sơ xét duyệt trạm mới</p>
+        </div>
+        <span class="material-symbols-outlined text-amber-700 group-hover:translate-x-1 transition-transform">chevron_right</span>
+      </a>
+
+      <!-- Menu Card: Đặt xăng -->
+      <a id="card-customer-datxang" class="group card-base p-md hover:border-primary hover:shadow-md transition-all flex items-center gap-4 border border-outline-variant/30 rounded-2xl" href="/ThanhToan.html">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+          <span class="material-symbols-outlined">local_gas_station</span>
+        </div>
+        <div class="flex-grow">
+          <h3 class="text-title-md font-bold text-on-surface">Đặt & Thanh toán xăng</h3>
+          <p class="text-body-sm text-secondary">Tạo đơn đổ xăng và thanh toán QR</p>
+        </div>
+        <span class="material-symbols-outlined text-secondary group-hover:text-primary transition-colors">chevron_right</span>
+      </a>
+
+      <!-- Menu Card: Lịch sử -->
+      <a id="card-customer-lichsu" class="group card-base p-md hover:border-primary hover:shadow-md transition-all flex items-center gap-4 border border-outline-variant/30 rounded-2xl" href="/LichSu.html">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+          <span class="material-symbols-outlined">history</span>
+        </div>
+        <div class="flex-grow">
+          <h3 class="text-title-md font-bold text-on-surface">Lịch sử giao dịch</h3>
+          <p class="text-body-sm text-secondary">Xem các khoản thanh toán nhiên liệu</p>
+        </div>
+        <span class="material-symbols-outlined text-secondary group-hover:text-primary transition-colors">chevron_right</span>
+      </a>
+
+      <!-- Menu Card: Bản đồ -->
+      <a class="group card-base p-md hover:border-primary hover:shadow-md transition-all flex items-center gap-4 border border-outline-variant/30 rounded-2xl" href="/BanDo.html">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+          <span class="material-symbols-outlined">map</span>
+        </div>
+        <div class="flex-grow">
+          <h3 class="text-title-md font-bold text-on-surface">Bản đồ trạm xăng</h3>
+          <p class="text-body-sm text-secondary">Tìm trạm xăng gần nhất & chỉ đường</p>
+        </div>
+        <span class="material-symbols-outlined text-secondary group-hover:text-primary transition-colors">chevron_right</span>
+      </a>
+
+      <!-- Menu Card: Trạm yêu thích -->
+      <a id="card-customer-yeuthich" class="group card-base p-md hover:border-primary hover:shadow-md transition-all flex items-center gap-4 border border-outline-variant/30 rounded-2xl" href="/YeuThich.html">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+          <span class="material-symbols-outlined">favorite</span>
+        </div>
+        <div class="flex-grow">
+          <h3 class="text-title-md font-bold text-on-surface">Trạm xăng yêu thích</h3>
+          <p class="text-body-sm text-secondary">Danh sách trạm đã lưu</p>
+        </div>
+        <span class="material-symbols-outlined text-secondary group-hover:text-primary transition-colors">chevron_right</span>
+      </a>
+
+      <!-- Menu Card: Giá xăng dầu -->
+      <a class="group card-base p-md hover:border-primary hover:shadow-md transition-all flex items-center gap-4 border border-outline-variant/30 rounded-2xl" href="/GiaXangDau.html">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+          <span class="material-symbols-outlined">price_change</span>
+        </div>
+        <div class="flex-grow">
+          <h3 class="text-title-md font-bold text-on-surface">Bảng giá xăng dầu</h3>
+          <p class="text-body-sm text-secondary">Tra cứu giá niêm yết thời gian thực</p>
+        </div>
+        <span class="material-symbols-outlined text-secondary group-hover:text-primary transition-colors">chevron_right</span>
+      </a>
+
+      <!-- Menu Card: Đổi mật khẩu -->
+      <a class="group card-base p-md hover:border-primary hover:shadow-md transition-all flex items-center gap-4 border border-outline-variant/30 rounded-2xl" href="/DoiMatKhau.html">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+          <span class="material-symbols-outlined">lock</span>
+        </div>
+        <div class="flex-grow">
+          <h3 class="text-title-md font-bold text-on-surface">Đổi mật khẩu</h3>
+          <p class="text-body-sm text-secondary">Cập nhật mật khẩu bảo mật</p>
+        </div>
+        <span class="material-symbols-outlined text-secondary group-hover:text-primary transition-colors">chevron_right</span>
+      </a>
+    </section>
+  </div>
+</main>
+
+<script>
+  /* =========================================================================
+     [Ghi chú] Code gốc ban đầu của trang TaiKhoan.html:
+     -------------------------------------------------------------------------
+     document.addEventListener("DOMContentLoaded", async () => {
+       try {
+         const res = await fetch("/api/auth/me");
+         if (!res.ok) {
+           // Not logged in
+           window.location.href = "/DangNhap.html";
+           return;
+         }
+
+         const user = await res.json();
+         document.getElementById("acc-full-name").textContent = user.name || user.username;
+         document.getElementById("acc-username").textContent = `@${user.username}`;
+         document.getElementById("acc-email").textContent = user.email || "--";
+         document.getElementById("acc-phone").textContent = user.phone || "--";
+
+         const badge = document.getElementById("acc-role-badge");
+         const cardDn = document.getElementById("card-enterprise-dashboard");
+
+         if (user.role === "DOANH_NGHIEP") {
+           badge.textContent = "🏢 Doanh nghiệp";
+           badge.className = "mb-2 px-3 py-0.5 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-800 border border-blue-300";
+           cardDn.classList.remove("hidden");
+           if (user.enterprise_status !== "DA_DUYET") {
+             cardDn.href = "/TrangThaiDoanhNghiep.html";
+             cardDn.textContent = "Trạng thái doanh nghiệp: " + user.enterprise_status;
+           }
+         } else if (user.role === "QUAN_TRI_VIEN") {
+           badge.textContent = "Quản trị viên";
+           cardDn.href = "/QuanTriVien.html";
+           cardDn.textContent = "Trang quản trị viên";
+           cardDn.classList.remove("hidden");
+         } else {
+           badge.textContent = "🚗 Khách hàng";
+           badge.className = "mb-2 px-3 py-0.5 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300";
+
+           // Lấy số lượng xe của khách hàng
+           try {
+             const vRes = await fetch("/api/auth/vehicles");
+             if (vRes.ok) {
+               const vList = await vRes.json();
+               const vBox = document.getElementById("acc-vehicles-box");
+               const vCount = document.getElementById("txt-vehicle-count");
+               if (vBox && vCount) {
+                 vCount.textContent = `${vList.length} phương tiện`;
+                 vBox.classList.remove("hidden");
+               }
+             }
+           } catch (err) {
+             console.error("Lỗi khi tải số lượng xe:", err);
+           }
+         }
+       } catch (e) {
+         console.error(e);
+       }
+     });
+     ========================================================================= */
+
+  // Hàm render thông tin tài khoản (được dùng để nạp cache tức thì 0ms trước khi DOMContentLoaded hoàn thành)
+  function renderAccountProfile(user) {
+    if (!user) return;
+    const nameEl = document.getElementById("acc-full-name");
+    const userEl = document.getElementById("acc-username");
+    const emailEl = document.getElementById("acc-email");
+    const phoneEl = document.getElementById("acc-phone");
+    const badge = document.getElementById("acc-role-badge");
+    const cardDn = document.getElementById("card-enterprise-dashboard");
+    const cardTiepNhan = document.getElementById("card-enterprise-tiepnhan");
+    const cardHsdn = document.getElementById("card-enterprise-hsdn");
+    const cardDatXang = document.getElementById("card-customer-datxang");
+    const cardLichSu = document.getElementById("card-customer-lichsu");
+    const cardYeuThich = document.getElementById("card-customer-yeuthich");
+    const textEditProfile = document.getElementById("text-edit-profile");
+    const iconEditProfile = document.getElementById("icon-edit-profile");
+    const boxVehicles = document.getElementById("acc-vehicles-box");
+
+    if (nameEl) nameEl.textContent = user.name || user.username;
+    if (userEl) userEl.textContent = `@${user.username}`;
+    if (emailEl) emailEl.textContent = user.email || "--";
+    if (phoneEl) phoneEl.textContent = user.phone || "--";
+
+    if (user.role === "DOANH_NGHIEP") {
+      if (badge) {
+        badge.textContent = "🏢 Doanh nghiệp";
+        badge.className = "mb-2 px-3 py-0.5 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-800 border border-blue-300";
+      }
+      if (textEditProfile) textEditProfile.textContent = "Chỉnh sửa thông tin cá nhân";
+      if (iconEditProfile) iconEditProfile.textContent = "manage_accounts";
+      if (boxVehicles) boxVehicles.classList.add("hidden");
+
+      // Ẩn các tính năng khách hàng
+      if (cardDatXang) cardDatXang.classList.add("hidden");
+      if (cardLichSu) cardLichSu.classList.add("hidden");
+      if (cardYeuThich) cardYeuThich.classList.add("hidden");
+
+      // Hiện các tính năng Doanh nghiệp
+      if (cardDn) {
+        cardDn.href = user.enterprise_status === "DA_DUYET" ? "/QuanLyTram.html" : "/TrangThaiDoanhNghiep.html";
+        cardDn.classList.remove("hidden");
+      }
+      if (cardTiepNhan) {
+        if (user.enterprise_status === "DA_DUYET") cardTiepNhan.classList.remove("hidden");
+        else cardTiepNhan.classList.add("hidden");
+      }
+      if (cardHsdn) cardHsdn.classList.remove("hidden");
+
+
+
+    } else {
+      // Khách hàng cá nhân
+      if (badge) {
+        badge.textContent = "🚗 Khách hàng";
+        badge.className = "mb-2 px-3 py-0.5 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300";
+      }
+      if (textEditProfile) textEditProfile.textContent = "Chỉnh sửa thông tin & Quản lý xe";
+      if (iconEditProfile) iconEditProfile.textContent = "directions_car";
+
+      if (cardDatXang) cardDatXang.classList.remove("hidden");
+      if (cardLichSu) cardLichSu.classList.remove("hidden");
+      if (cardYeuThich) cardYeuThich.classList.remove("hidden");
+      if (cardDn) cardDn.classList.add("hidden");
+      if (cardTiepNhan) cardTiepNhan.classList.add("hidden");
+      if (cardHsdn) cardHsdn.classList.add("hidden");
+    }
+  }
+
+  // Nạp dữ liệu tức thì từ cache để loại bỏ chớp chữ "Đang tải..." khi F5
+  try {
+    const cached = localStorage.getItem("petro_user");
+    if (cached) renderAccountProfile(JSON.parse(cached));
+  } catch (e) {}
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) {
+        // Not logged in
+        window.location.href = "/DangNhap.html";
+        return;
+      }
+
+      const user = await res.json();
+      localStorage.setItem("petro_user", JSON.stringify(user));
+      renderAccountProfile(user);
+
+      // Nếu là khách hàng thì tải thêm số lượng xe
+      if (user.role === "KHACH_HANG") {
+        try {
+          const vRes = await fetch("/api/auth/vehicles");
+          if (vRes.ok) {
+            const vList = await vRes.json();
+            const vBox = document.getElementById("acc-vehicles-box");
+            const vCount = document.getElementById("txt-vehicle-count");
+            if (vBox && vCount) {
+              vCount.textContent = vList.length > 0 ? `${vList.length} xe ô tô` : `Chưa lưu xe ô tô`;
+              vBox.classList.remove("hidden");
+            }
+          }
+        } catch (err) {
+          console.error("Lỗi khi tải số lượng xe:", err);
+        }
+      }
+
+    } catch (e) {
+      console.error(e);
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,91 @@
+{
+  "format_version": 1,
+  "dataset_id": "PETRO_LOCAL_DEV_CATALOG_ONLY_V1",
+  "kind": "synthetic_catalog_only",
+  "description": "16 reviewed synthetic lookup rows; all other public tables must be empty. No users, stations, accounts, stock or financial history.",
+  "rows": {
+    "trang_thai": [
+      {
+        "tt_ma": "TT000001",
+        "tt_ten": "Thành công"
+      },
+      {
+        "tt_ma": "TT000002",
+        "tt_ten": "Thất bại"
+      },
+      {
+        "tt_ma": "TT000003",
+        "tt_ten": "Đang xử lý"
+      }
+    ],
+    "trang_thai_xac_nhan": [
+      {
+        "ttxn_ma": "TTXN0001",
+        "ttxn_ten": "Chờ duyệt"
+      },
+      {
+        "ttxn_ma": "TTXN0002",
+        "ttxn_ten": "Đã xác nhận"
+      },
+      {
+        "ttxn_ma": "TTXN0003",
+        "ttxn_ten": "Đang bơm"
+      },
+      {
+        "ttxn_ma": "TTXN0004",
+        "ttxn_ten": "Hoàn thành"
+      },
+      {
+        "ttxn_ma": "TTXN0005",
+        "ttxn_ten": "Từ chối"
+      },
+      {
+        "ttxn_ma": "TTXN0006",
+        "ttxn_ten": "Đã hủy"
+      },
+      {
+        "ttxn_ma": "TTXN0007",
+        "ttxn_ten": "Hết hạn"
+      }
+    ],
+    "don_vi_tinh": [
+      {
+        "dvt_ma": "DVT00001",
+        "dvt_ten": "Lít"
+      }
+    ],
+    "loai_phuong_tien": [
+      {
+        "lpt_ma": "LPT00001",
+        "lpt_ten": "Xe máy"
+      },
+      {
+        "lpt_ma": "LPT00002",
+        "lpt_ten": "Ô tô"
+      }
+    ],
+    "nhien_lieu": [
+      {
+        "nl_ma": "NL000001",
+        "dvt_ma": "DVT00001",
+        "nl_ten": "Xăng E10 RON 95-III"
+      },
+      {
+        "nl_ma": "NL000002",
+        "dvt_ma": "DVT00001",
+        "nl_ten": "E5 RON 92-II"
+      },
+      {
+        "nl_ma": "NL000003",
+        "dvt_ma": "DVT00001",
+        "nl_ten": "Diesel DO 0,05S-II"
+      }
+    ]
+  },
+  "sequences": {
+    "gia_tham_chieu_id_seq": {
+      "start_value": 1,
+      "is_called": false
+    }
+  }
+}

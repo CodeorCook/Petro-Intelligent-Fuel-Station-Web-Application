@@ -1,0 +1,2350 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Quản Lý Trạm Xăng Doanh Nghiệp - Petro{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* [Ghi chú] Code CSS Kiosk cũ:
+  body.kiosk-active #dn-orders-table-body tr { height: 72px; }
+  body.kiosk-active #dn-orders-table-body td { padding: 1rem 0.75rem !important; }
+  body.kiosk-active #dn-orders-table-body button { min-height: 46px !important; min-width: 110px !important; font-size: 0.95rem !important; padding: 0.5rem 1rem !important; }
+  */
+  body.kiosk-active #dn-orders-table-body tr {
+    height: 86px;
+    background-color: #ffffff;
+  }
+
+  body.kiosk-active #dn-orders-table-body td {
+    padding: 1.25rem 0.75rem !important;
+  }
+
+  body.kiosk-active #dn-orders-table-body button {
+    min-height: 48px !important;
+    min-width: 120px !important;
+    font-size: 1rem !important;
+    padding: 0.75rem 1.25rem !important;
+    font-weight: 800 !important;
+    border-radius: 0.875rem !important;
+  }
+
+  body.kiosk-active .kiosk-big-plate {
+    font-size: 1.4rem !important;
+    padding: 0.4rem 0.75rem !important;
+    background-color: #fef9c3 !important;
+    color: #1e293b !important;
+    border: 2px solid #ca8a04 !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.05em !important;
+    border-radius: 0.6rem !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  body.kiosk-active .kiosk-big-fuel {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    color: #006c49 !important;
+  }
+
+  body.kiosk-active .kiosk-secondary-info {
+    display: none !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="w-full max-w-7xl mx-auto px-container-margin md:px-lg py-lg md:py-xl space-y-lg">
+
+  <!-- Page Header & Station Selector -->
+  <div
+    class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant/30 pb-md">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span
+          class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-primary/10 text-primary border border-primary/30 flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">storefront</span> Cổng Quản Trị Doanh Nghiệp
+        </span>
+        <span class="text-xs text-secondary font-mono">Tài khoản: <b id="dn-username"
+            class="text-primary font-bold">doanhnghiep01</b></span>
+      </div>
+      <h1 class="text-headline-md font-bold text-on-background" id="dn-title">Quản Lý Trạm Xăng & Vận Hành</h1>
+      <p class="text-body-md text-on-surface-variant">Hệ thống quản lý trụ bơm, tồn kho bồn chứa, tiếp nhận bơm và đối
+        soát thanh toán trực quan</p>
+    </div>
+
+    <!-- Owned, approved operational station selection; profile selection is separate. -->
+    <div class="flex flex-wrap items-center gap-3">
+      <div
+        class="flex items-center gap-3 bg-surface-container-low px-4 py-2 rounded-2xl border border-outline-variant/40 shadow-sm">
+        <div class="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-xl">local_gas_station</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h2 id="station-display-name" class="font-bold text-on-surface text-sm">Đang tải trạm xăng...</h2>
+            <span id="station-display-code"
+              class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-primary/15 text-primary">TX...</span>
+          </div>
+          <p id="station-display-address" class="text-[11px] text-secondary truncate max-w-[250px] md:max-w-[340px]">Địa
+            chỉ trạm</p>
+          <label for="operations-station-select" class="block text-xs font-bold mt-2">Trạm đang vận hành</label>
+          <select id="operations-station-select" class="input-base w-full border rounded-lg p-2 mt-1" disabled
+            aria-describedby="operations-station-feedback">
+            <option value="">Đang tải danh sách trạm…</option>
+          </select>
+          <p id="operations-station-feedback" class="text-xs mt-1" role="status" aria-live="polite"></p>
+          <button id="operations-station-retry" type="button" class="text-primary underline text-xs hidden"
+            onclick="loadAllEnterpriseData()">Tải lại danh sách trạm</button>
+        </div>
+      </div>
+
+      <button type="button"
+        class="btn-primary py-2.5 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm"
+        onclick="loadAllEnterpriseData()">
+        <span class="material-symbols-outlined text-sm">refresh</span> Đồng bộ tức thời
+      </button>
+    </div>
+  </div>
+
+  <!-- Bento KPI Overview Cards (Tóm tắt trực quan 1 cái nhìn) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
+    <!-- Card 1: Doanh thu tổng -->
+    <div
+      class="card-base p-md md:p-lg border border-outline-variant/30 bg-white shadow-sm flex flex-col justify-between">
+      <div class="flex justify-between items-start">
+        <span class="text-xs text-secondary uppercase font-bold tracking-wider">Tổng Doanh Thu</span>
+        <span class="p-2 rounded-xl bg-primary/10 text-primary material-symbols-outlined text-xl">payments</span>
+      </div>
+      <div class="mt-3">
+        <div id="stat-kpi-revenue" class="text-2xl font-black text-primary">0 đ</div>
+        <div class="text-xs text-secondary mt-1 flex items-center justify-between">
+          <span>Tổng số lít đã bán:</span>
+          <b id="stat-kpi-liters" class="text-on-surface font-bold">0 L</b>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Đối soát Tiền mặt vs Điện tử -->
+    <div
+      class="card-base p-md md:p-lg border border-outline-variant/30 bg-white shadow-sm flex flex-col justify-between">
+      <div class="flex justify-between items-start">
+        <span class="text-xs text-secondary uppercase font-bold tracking-wider">Đối Soát Thanh Toán</span>
+        <span class="p-2 rounded-xl bg-amber-500/10 text-amber-600 material-symbols-outlined text-xl">balance</span>
+      </div>
+      <div class="mt-3 space-y-1">
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-secondary flex items-center gap-1"><span
+              class="w-2 h-2 rounded-full bg-emerald-500"></span>Tiền mặt (Két):</span>
+          <b id="stat-kpi-cash" class="font-bold text-emerald-700">0 đ</b>
+        </div>
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-secondary flex items-center gap-1"><span
+              class="w-2 h-2 rounded-full bg-blue-500"></span>VietQR (Ngân hàng):</span>
+          <b id="stat-kpi-digital" class="font-bold text-blue-700">0 đ</b>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Tồn kho bồn chứa -->
+    <div
+      class="card-base p-md md:p-lg border border-outline-variant/30 bg-white shadow-sm flex flex-col justify-between">
+      <div class="flex justify-between items-start">
+        <span class="text-xs text-secondary uppercase font-bold tracking-wider">Tồn Kho Bồn Chứa</span>
+        <span class="p-2 rounded-xl bg-blue-500/10 text-blue-600 material-symbols-outlined text-xl">propane_tank</span>
+      </div>
+      <div class="mt-3">
+        <div id="stat-kpi-inventory" class="text-2xl font-black text-blue-700">—</div>
+        <div class="w-full bg-surface-container-high rounded-full h-2 mt-1.5 overflow-hidden">
+          <div id="stat-kpi-inv-bar" class="bg-primary h-2 rounded-full transition-all duration-500" style="width: 0%">
+          </div>
+        </div>
+        <div class="text-[11px] text-secondary mt-1 flex justify-between">
+          <span id="stat-kpi-inv-pct">Chưa tải dữ liệu kho</span>
+          <span class="text-emerald-700 font-bold">Mức an toàn</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Trụ bơm & Đơn phục vụ -->
+    <div
+      class="card-base p-md md:p-lg border border-outline-variant/30 bg-white shadow-sm flex flex-col justify-between">
+      <div class="flex justify-between items-start">
+        <span class="text-xs text-secondary uppercase font-bold tracking-wider">Trụ Bơm & Đơn Hàng</span>
+        <span
+          class="p-2 rounded-xl bg-purple-500/10 text-purple-600 material-symbols-outlined text-xl">local_gas_station</span>
+      </div>
+      <div class="mt-3 flex justify-between items-end">
+        <div>
+          <div id="stat-kpi-pumps" class="text-2xl font-black text-on-surface">0 / 0</div>
+          <div class="text-xs text-secondary mt-1">Trụ đang hoạt động</div>
+        </div>
+        <div class="text-right">
+          <div id="stat-kpi-orders" class="text-xl font-bold text-primary">0</div>
+          <div class="text-xs text-secondary">Chờ phục vụ</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bố cục Quản Lý Trạm: Thanh Dọc Bên Trái (Sidebar) + Vùng Nội Dung Vận Hành Bên Phải -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <!-- CỘT DỌC BÊN TRÁI: THANH ĐIỀU HƯỚNG QUẢN LÝ -->
+    <aside class="lg:col-span-3 space-y-4">
+      <div
+        class="card-base p-3.5 md:p-4 border border-outline-variant/30 bg-white shadow-sm rounded-2xl space-y-3 lg:sticky lg:top-24">
+        <!-- Sidebar Title -->
+        <div class="flex items-center justify-between pb-2.5 border-b border-outline-variant/20 px-1">
+          <span class="text-xs uppercase font-extrabold tracking-wider text-secondary flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base text-primary">menu_open</span>
+            Danh Mục Quản Lý
+          </span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
+            Quản trị
+          </span>
+        </div>
+
+        <!-- Vertical Navigation Menu -->
+        <nav class="flex flex-col gap-1.5" id="dn-tabs-nav-bar">
+          <button type="button"
+            class="w-full text-left py-2.5 px-3.5 rounded-xl font-medium text-xs md:text-sm text-secondary hover:text-primary hover:bg-surface-container-low transition-all flex items-center gap-2.5"
+            id="tab-btn-stations" onclick="switchDnTab('stations')">
+            <span class="material-symbols-outlined text-lg">domain</span>
+            <span class="flex-1">Danh Sách & Đăng Ký Trạm</span>
+          </button>
+
+          <button type="button"
+            class="w-full text-left py-2.5 px-3.5 rounded-xl font-bold text-xs md:text-sm bg-primary/10 text-primary border border-primary/20 shadow-xs transition-all flex items-center gap-2.5"
+            id="tab-btn-pumps" onclick="switchDnTab('pumps')">
+            <span class="material-symbols-outlined text-lg">local_gas_station</span>
+            <span class="flex-1">Quản Lý Trụ Bơm</span>
+          </button>
+
+          <button type="button"
+            class="w-full text-left py-2.5 px-3.5 rounded-xl font-medium text-xs md:text-sm text-secondary hover:text-primary hover:bg-surface-container-low transition-all flex items-center gap-2.5"
+            id="tab-btn-inventory" onclick="switchDnTab('inventory')">
+            <span class="material-symbols-outlined text-lg">propane_tank</span>
+            <span class="flex-1">Bồn Chứa & Tồn Kho</span>
+          </button>
+
+          <button type="button"
+            class="w-full text-left py-2.5 px-3.5 rounded-xl font-medium text-xs md:text-sm text-secondary hover:text-primary hover:bg-surface-container-low transition-all flex items-center gap-2.5"
+            id="tab-btn-prices" onclick="switchDnTab('prices')">
+            <span class="material-symbols-outlined text-lg">price_change</span>
+            <span class="flex-1">Giá Nhiên Liệu</span>
+          </button>
+
+          <button type="button"
+            class="w-full text-left py-2.5 px-3.5 rounded-xl font-medium text-xs md:text-sm text-secondary hover:text-primary hover:bg-surface-container-low transition-all flex items-center gap-2.5"
+            id="tab-btn-invoices" onclick="switchDnTab('invoices')">
+            <span class="material-symbols-outlined text-lg">receipt_long</span>
+            <span class="flex-1">Hóa Đơn Bán Hàng</span>
+          </button>
+
+          <button type="button"
+            class="w-full text-left py-2.5 px-3.5 rounded-xl font-medium text-xs md:text-sm text-secondary hover:text-primary hover:bg-surface-container-low transition-all flex items-center gap-2.5"
+            id="tab-btn-reconciliation" onclick="switchDnTab('reconciliation')">
+            <span class="material-symbols-outlined text-lg">query_stats</span>
+            <span class="flex-1">Báo Cáo & Đối Soát</span>
+          </button>
+
+        </nav>
+
+        <!-- Khối chuyển nhanh sang màn hình Tiếp Nhận Bơm Xăng -->
+        <div class="pt-3 border-t border-outline-variant/20">
+          <a id="btn-jump-to-tiepnhan" href="/TiepNhanBom.html"
+            class="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md hover:shadow-lg hover:scale-[1.01] transition-all flex flex-col gap-2 group block">
+            <div class="flex items-center justify-between">
+              <span class="flex items-center gap-1.5 font-bold text-xs md:text-sm">
+                <span class="material-symbols-outlined text-base">local_gas_station</span>
+                Tiếp Nhận Bơm Xăng
+              </span>
+              <span
+                class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </div>
+            <p class="text-[11px] text-emerald-100 leading-tight">Mở màn hình ca trực phục vụ xe đổ xăng & POS cột bơm
+              riêng biệt.</p>
+            <div
+              class="flex items-center justify-between text-[11px] pt-1.5 border-t border-emerald-500/40 font-medium">
+              <span>Hàng chờ hiện tại:</span>
+              <span id="badge-sidebar-orders" class="font-black bg-white/25 px-2 py-0.5 rounded-full text-white">0
+                xe</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CỘT NỘI DUNG CHÍNH (BÊN PHẢI) -->
+    <div class="lg:col-span-9 space-y-4">
+      <div class="card-base border border-outline-variant/30 overflow-hidden shadow-sm bg-white rounded-2xl">
+        <!-- ========================================================================= -->
+        <!-- TAB 0: QUẢN LÝ DANH SÁCH TRẠM (Enterprise Stations Table) -->
+        <!-- ========================================================================= -->
+        <div id="panel-dn-stations" class="p-md md:p-lg space-y-md hidden" data-station-approval-page="enterprise">
+          <!-- Header panel -->
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-sm border-b border-outline-variant/20">
+            <div>
+              <h3 class="font-bold text-base md:text-lg text-primary flex items-center gap-2">
+                <span class="material-symbols-outlined text-xl text-primary">domain</span>
+                Quản Lý Danh Sách Cây Xăng Trực Thuộc
+              </h3>
+              <p class="text-xs text-secondary mt-0.5">Bảng thống kê toàn bộ các trạm xăng dầu trực thuộc quyền quản lý và khai thác của doanh nghiệp.</p>
+            </div>
+            <div class="flex items-center gap-2 self-stretch sm:self-auto">
+              <button id="refresh-station-proposal" class="btn-secondary py-2 px-3 text-xs flex items-center gap-1.5" type="button" title="Tải lại danh sách & trạng thái">
+                <span class="material-symbols-outlined text-base">sync</span>
+                <span class="hidden sm:inline">Tải lại</span>
+              </button>
+              <button id="new-station-draft" class="btn-primary py-2 px-3.5 text-xs font-bold flex items-center gap-1.5 shadow-sm bg-primary text-white hover:bg-primary/90" type="button">
+                <span class="material-symbols-outlined text-base">add_business</span>
+                <span>Đăng Ký Trạm Mới</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Thông báo phản hồi hệ thống -->
+          <div id="station-approval-message" role="status" aria-live="polite" class="empty:hidden p-3 rounded-xl bg-primary/10 text-primary text-xs font-semibold border border-primary/20"></div>
+
+          <!-- BẢNG THỐNG KÊ CÁC TRẠM (DATA TABLE GIỐNG BẢNG HÓA ĐƠN) -->
+          <div class="overflow-x-auto border border-outline-variant/30 rounded-xl shadow-sm custom-scrollbar">
+            <table class="w-full text-left text-xs md:text-sm whitespace-nowrap min-w-[850px]">
+              <thead class="bg-surface-container-low text-[11px] md:text-xs text-secondary uppercase font-bold border-b border-outline-variant/30">
+                <tr>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Mã Trạm</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Tên Trạm Xăng</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Địa Chỉ Cụ Thể</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Tuyến Đường</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Tọa Độ GPS</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap text-center">Trạng Thái</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap text-center">Phiên Bản</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap text-center">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="owned-station-list" class="divide-y divide-outline-variant/20">
+                <tr>
+                  <td colspan="8" class="py-8 text-center text-secondary">Đang tải danh sách cây xăng...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 1: TIẾP NHẬN & BƠM XĂNG -> ĐÃ CHUYỂN SANG TRANG CHUYÊN DỤNG -->
+        <!-- ========================================================================= -->
+        <div id="panel-dn-orders" class="p-md md:p-lg space-y-md hidden">
+          <div
+            class="p-8 rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100/40 border-2 border-emerald-500/30 text-center space-y-4 shadow-sm">
+            <div
+              class="w-16 h-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-md">
+              <span class="material-symbols-outlined text-4xl">local_gas_station</span>
+            </div>
+            <div class="space-y-1.5 max-w-lg mx-auto">
+              <h3 class="text-xl font-bold text-emerald-950">Màn Hình Tiếp Nhận & Bơm Xăng (POS Ca Trực)</h3>
+              <p class="text-xs md:text-sm text-emerald-800 leading-relaxed">
+                Hàng chờ phục vụ tại cột bơm xe, chốt chỉ số lít thực tế, tiếp nhận đơn và đối soát thanh toán đã được
+                chuyển hoàn toàn sang trang chuyên dụng dành riêng cho nhân viên ca trực.
+              </p>
+            </div>
+            <div class="pt-2 flex justify-center">
+              <a id="btn-redirect-tiepnhan" href="/TiepNhanBom.html"
+                class="btn-primary py-3 px-6 rounded-xl text-xs md:text-sm font-bold bg-emerald-700 hover:bg-emerald-800 text-white flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+                <span class="material-symbols-outlined text-lg">open_in_new</span>
+                <span>Mở màn hình Tiếp Nhận Bơm Xăng</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 2: QUẢN LÝ TRỤ BƠM (Pump Dispensers / Nozzles) -->
+        <!-- ========================================================================= -->
+        <div id="panel-dn-pumps" class="p-md md:p-lg space-y-md">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-sm border-b border-outline-variant/20">
+            <div>
+              <h3 class="text-title-md font-bold text-on-surface">Danh sách trụ bơm nhiên liệu tại trạm</h3>
+              <p class="text-xs text-secondary">Theo dõi trạng thái các trụ, vòi nhiên liệu và chỉ số đồng hồ điện tử
+                lũy
+                kế.</p>
+            </div>
+            <span class="text-xs font-bold text-primary px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+              <span id="ops-pump-count">Tổng cộng: 0 Trụ bơm</span>
+            </span>
+          </div>
+
+          <!-- Pump Cards Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md" id="dn-pumps-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 3: BỒN CHỨA & TỒN KHO NHIÊN LIỆU (Storage Tanks & Inventory) -->
+        <!-- ========================================================================= -->
+        <div id="panel-dn-inventory" class="p-md md:p-lg space-y-lg hidden">
+          <div role="status" aria-live="polite" class="rounded-xl border p-3">
+            <span id="inventory-load-status">Đang tải cấu hình kho…</span>
+            <button type="button" id="inventory-retry" class="border rounded-xl p-3 hidden"
+              onclick="fetchInventoryData()">Thử lại tải kho</button>
+          </div>
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-sm border-b border-outline-variant/20">
+            <div>
+              <h3 class="text-title-md font-bold text-on-surface">Hệ thống bồn chứa ngầm & Quản lý tồn kho</h3>
+              <p class="text-xs text-secondary">Theo dõi trực quan mức dung tích chất lỏng trong bồn. Cảnh báo tự động
+                khi
+                nhiên liệu chạm ngưỡng an toàn.</p>
+            </div>
+            <button type="button" id="inventory-refill-button" disabled
+              class="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md"
+              onclick="openRefillModal()">
+              <span class="material-symbols-outlined text-sm">local_shipping</span>
+              Nhập nhiên liệu từ xe bồn
+            </button>
+          </div>
+
+          <!-- Tanks Grid (Thước đo chất lỏng) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-lg" id="dn-tanks-grid">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Refill History Table -->
+          <div class="space-y-sm pt-md border-t border-outline-variant/30">
+            <h4 class="text-sm font-bold text-on-surface flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-primary text-base">history</span>
+              Nhật ký nhập xăng dầu xe bồn gần đây
+            </h4>
+            <div class="overflow-x-auto border border-outline-variant/30 rounded-xl shadow-sm">
+              <table class="w-full text-left text-xs">
+                <thead
+                  class="bg-surface-container-low text-secondary uppercase font-bold border-b border-outline-variant/30">
+                  <tr>
+                    <th class="py-2.5 px-4">Mã nhập</th>
+                    <th class="py-2.5 px-4">Bồn chứa</th>
+                    <th class="py-2.5 px-4">Số lượng nhập</th>
+                    <th class="py-2.5 px-4">Đơn vị vận chuyển / Xe bồn</th>
+                    <th class="py-2.5 px-4">Thời gian</th>
+                  </tr>
+                </thead>
+                <tbody id="dn-refill-history-body" class="divide-y divide-outline-variant/20">
+                  <tr>
+                    <td colspan="5" class="py-4 text-center text-secondary">Chưa có bản ghi nhập kho nào.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 4: QUẢN LÝ GIÁ NHIÊN LIỆU (Fuel Prices) -->
+        <!-- ========================================================================= -->
+        <div id="panel-dn-prices" class="p-md md:p-lg space-y-md hidden">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-sm border-b border-outline-variant/20">
+            <div>
+              <h3 class="text-title-md font-bold text-on-surface">Điều chỉnh giá niêm yết theo trạm</h3>
+              <p class="text-xs text-secondary">Cập nhật đơn giá bán lẻ cho các loại xăng dầu. Hệ thống tự động đồng bộ
+                tức
+                thời đến ứng dụng khách hàng.</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="applyZoneBenchmarkPrice(1)"
+                class="btn-secondary py-1.5 px-3 text-xs font-bold rounded-xl flex items-center gap-1 hover:border-primary">
+                <span class="material-symbols-outlined text-sm text-primary">price_check</span>
+                <span>Mẫu giá Vùng 1</span>
+              </button>
+              <button type="button" onclick="applyZoneBenchmarkPrice(2)"
+                class="btn-secondary py-1.5 px-3 text-xs font-bold rounded-xl flex items-center gap-1 hover:border-primary">
+                <span class="material-symbols-outlined text-sm text-primary">price_check</span>
+                <span>Mẫu giá Vùng 2 (+2%)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- State Regulation Compliance Banner -->
+          <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-950 space-y-1 text-xs">
+            <div class="flex items-center gap-1.5 font-bold text-amber-900">
+              <span class="material-symbols-outlined text-base text-amber-700">gavel</span>
+              <span>Khung pháp lý điều hành giá xăng dầu Nhà nước:</span>
+            </div>
+            <p class="leading-relaxed text-amber-900/90">
+              Theo Nghị định 95/2021/NĐ-CP và Nghị định 80/2023/NĐ-CP, giá bán lẻ xăng dầu của trạm phải tuân thủ mức
+              giá
+              trần do Liên Bộ Công Thương - Tài chính công bố trong kỳ điều hành. Không được tự ý bán vượt giá trần niêm
+              yết
+              của thương nhân phân phối.
+            </p>
+          </div>
+
+          <!-- Price Edit Form Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-md" id="dn-fuel-price-cards">
+            <!-- Rendered by JS -->
+          </div>
+
+          <div class="flex justify-end pt-sm">
+            <button type="button"
+              class="btn-primary py-3 px-6 rounded-xl font-bold text-sm shadow-md hover:shadow-lg flex items-center gap-2"
+              onclick="saveStationPrices()">
+              <span class="material-symbols-outlined text-base">save</span>
+              Lưu bảng giá niêm yết mới
+            </button>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 5: HÓA ĐƠN & LỊCH SỬ BÁN HÀNG (Invoices) -->
+        <!-- ========================================================================= -->
+        <div id="panel-dn-invoices" class="p-md md:p-lg space-y-md hidden">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-sm border-b border-outline-variant/20">
+            <div>
+              <h3 class="text-title-md font-bold text-on-surface">Sổ theo dõi hóa đơn bán lẻ nhiên liệu</h3>
+              <p class="text-xs text-secondary">Danh sách hóa đơn xuất cho khách hàng, bao gồm phương thức thanh toán
+                tiền
+                mặt và chuyển khoản VietQR.</p>
+            </div>
+            <span id="dn-invoices-count" class="text-xs font-bold text-secondary">0 hóa đơn</span>
+          </div>
+
+          <div class="overflow-x-auto border border-outline-variant/30 rounded-xl shadow-sm custom-scrollbar">
+            <table class="w-full text-left text-xs md:text-sm whitespace-nowrap min-w-[920px]">
+              <thead
+                class="bg-surface-container-low text-[11px] md:text-xs text-secondary uppercase font-bold border-b border-outline-variant/30">
+                <tr>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Mã HĐ / GD</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Ngày giờ</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Khách hàng</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Biển số</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Nhiên liệu</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap text-right">Số lít</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap text-right">Đơn giá</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap text-right">Tổng tiền</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap text-center">Hình thức TT</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap text-center">Xem HĐ</th>
+                </tr>
+              </thead>
+              <tbody id="dn-invoices-table-body" class="divide-y divide-outline-variant/20">
+                <tr>
+                  <td colspan="10" class="py-8 text-center text-secondary">Đang tải danh sách hóa đơn...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 6: BÁO CÁO DOANH THU & ĐỐI SOÁT (Reconciliation) -->
+        <!-- ========================================================================= -->
+        <div id="panel-dn-reconciliation" class="p-md md:p-lg space-y-lg hidden">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-sm border-b border-outline-variant/20">
+            <div>
+              <h3 class="text-title-md font-bold text-on-surface">Báo cáo doanh thu & Đối soát kiểm quỹ ca</h3>
+              <p class="text-xs text-secondary">Phân tách chi tiết dòng tiền thu mặt tại quầy và dòng tiền điện tử qua
+                mã
+                VietQR / Ngân hàng.</p>
+            </div>
+          </div>
+
+          <!-- Reconciliation 2-Column Comparison -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+
+            <!-- Column 1: Tiền mặt tại quầy -->
+            <div class="card-base p-lg rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/30 space-y-md">
+              <div class="flex justify-between items-center pb-sm border-b border-emerald-200">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="p-2 rounded-xl bg-emerald-600 text-white material-symbols-outlined text-lg">payments</span>
+                  <h4 class="font-bold text-emerald-950 text-base">Doanh Thu Tiền Mặt (Tại Quầy)</h4>
+                </div>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-200 text-emerald-900"
+                  id="rec-cash-pct">0%</span>
+              </div>
+
+              <div class="space-y-3">
+                <div class="flex justify-between items-end">
+                  <span class="text-xs text-emerald-800">Số tiền mặt nhân viên cần nộp két:</span>
+                  <span id="rec-cash-amount" class="text-2xl font-black text-emerald-700">0 đ</span>
+                </div>
+                <div
+                  class="flex justify-between items-center text-xs text-emerald-900 pt-2 border-t border-emerald-200/60">
+                  <span>Sản lượng xuất bán tiền mặt:</span>
+                  <b id="rec-cash-liters" class="font-bold">0 Lít</b>
+                </div>
+                <div class="flex justify-between items-center text-xs text-emerald-900">
+                  <span>Số lượt giao dịch tiền mặt:</span>
+                  <b id="rec-cash-orders" class="font-bold">0 đơn</b>
+                </div>
+              </div>
+
+              <div
+                class="p-3 bg-white rounded-xl border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-600 text-sm">verified_user</span>
+                <span>Số tiền thực tế kiểm đếm cần khớp đúng với số liệu két cuối ca.</span>
+              </div>
+            </div>
+
+            <!-- Column 2: Điện tử VietQR / Ngân hàng -->
+            <div class="card-base p-lg rounded-2xl border-2 border-blue-500/40 bg-blue-50/30 space-y-md">
+              <div class="flex justify-between items-center pb-sm border-b border-blue-200">
+                <div class="flex items-center gap-2">
+                  <span class="p-2 rounded-xl bg-blue-600 text-white material-symbols-outlined text-lg">qr_code_2</span>
+                  <h4 class="font-bold text-blue-950 text-base">Giao Dịch Điện Tử (VietQR / Chuyển Khoản)</h4>
+                </div>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-200 text-blue-900"
+                  id="rec-digital-pct">0%</span>
+              </div>
+
+              <div class="space-y-3">
+                <div class="flex justify-between items-end">
+                  <span class="text-xs text-blue-800">Số tiền đã vào tài khoản ngân hàng:</span>
+                  <span id="rec-digital-amount" class="text-2xl font-black text-blue-700">0 đ</span>
+                </div>
+                <div class="flex justify-between items-center text-xs text-blue-900 pt-2 border-t border-blue-200/60">
+                  <span>Sản lượng xuất bán điện tử:</span>
+                  <b id="rec-digital-liters" class="font-bold">0 Lít</b>
+                </div>
+                <div class="flex justify-between items-center text-xs text-blue-900">
+                  <span>Số lượt giao dịch điện tử:</span>
+                  <b id="rec-digital-orders" class="font-bold">0 đơn</b>
+                </div>
+              </div>
+
+              <div class="p-3 bg-white rounded-xl border border-blue-200 text-xs text-blue-900 flex items-center gap-2">
+                <span class="material-symbols-outlined text-blue-600 text-sm">account_balance</span>
+                <span>Khớp tự động theo thông báo biến động số dư Casso / VietQR Napas247.</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Fuel Breakdown Stats Table -->
+          <div class="space-y-sm pt-md border-t border-outline-variant/30">
+            <h4 class="text-sm font-bold text-on-surface flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-primary text-base">pie_chart</span>
+              Cơ cấu sản lượng & doanh thu theo mặt hàng
+            </h4>
+            <div class="overflow-x-auto border border-outline-variant/30 rounded-xl shadow-sm">
+              <table class="w-full text-left text-xs">
+                <thead
+                  class="bg-surface-container-low text-secondary uppercase font-bold border-b border-outline-variant/30">
+                  <tr>
+                    <th class="py-2.5 px-4">Tên nhiên liệu</th>
+                    <th class="py-2.5 px-4">Số lượt đổ xăng</th>
+                    <th class="py-2.5 px-4">Tổng số lít bán ra</th>
+                    <th class="py-2.5 px-4">Tổng doanh thu</th>
+                  </tr>
+                </thead>
+                <tbody id="dn-fuel-breakdown-body" class="divide-y divide-outline-variant/20">
+                  <tr>
+                    <td colspan="4" class="py-4 text-center text-secondary">Đang tính toán cơ cấu...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ========================================================================= -->
+<!-- MODAL 1: CHỐT SỐ LÍT / SỐ TIỀN & XUẤT HÓA ĐƠN -->
+<!-- ========================================================================= -->
+<div id="modal-pump-complete"
+  class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-md hidden backdrop-blur-sm">
+  <div
+    class="card-base max-w-md w-full p-lg rounded-2xl shadow-2xl border border-outline-variant/30 space-y-md bg-white">
+    <div class="flex justify-between items-center pb-sm border-b border-outline-variant/20">
+      <h3 class="text-title-md font-bold text-primary flex items-center gap-1.5">
+        <span class="material-symbols-outlined">receipt_long</span> Chốt Bơm & Xuất Hóa Đơn
+      </h3>
+      <button type="button" class="text-secondary hover:text-on-surface" onclick="closePumpModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Thông tin yêu cầu -->
+    <div class="space-y-sm text-xs bg-surface-container-low p-3 rounded-xl border border-outline-variant/20">
+      <div class="flex justify-between">
+        <span class="text-secondary">Mã yêu cầu:</span>
+        <span id="modal-yc-ma" class="font-mono font-bold text-primary">--</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-secondary">Phương tiện:</span>
+        <span id="modal-plate" class="font-mono font-bold text-on-surface">--</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-secondary">Nhiên liệu:</span>
+        <span id="modal-fuel" class="font-bold text-primary">--</span>
+      </div>
+      <div class="flex justify-between border-t border-outline-variant/20 pt-1">
+        <span class="text-secondary">Yêu cầu ban đầu:</span>
+        <span id="modal-requested-display" class="font-bold text-amber-700">--</span>
+      </div>
+    </div>
+
+    <!-- Chỉ số bồn & số lít còn lại -->
+    <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs space-y-1">
+      <div class="flex justify-between items-center text-blue-900 font-bold">
+        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">propane_tank</span> Bồn
+          chứa cấp xăng:</span>
+        <span id="modal-tank-name">Bồn B01</span>
+      </div>
+      <div class="flex justify-between text-blue-800">
+        <span>Số lít trong bồn trước bơm:</span>
+        <b id="modal-tank-before">18,450.00 Lít</b>
+      </div>
+      <div class="flex justify-between text-blue-800 border-t border-blue-200/50 pt-1 font-semibold">
+        <span>Số lít dự kiến còn lại sau bơm:</span>
+        <b id="modal-tank-after" class="text-primary font-bold">18,435.00 Lít</b>
+      </div>
+    </div>
+
+    <!-- Tùy chọn hình thức chốt: Số lít HOẶC Số tiền -->
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-bold text-secondary uppercase mb-1.5">Chọn hình thức chốt thực tế:</label>
+        <div class="grid grid-cols-2 gap-2 bg-surface-container-low p-1 rounded-xl border border-outline-variant/30">
+          <button type="button" id="btn-mode-liters"
+            class="py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-primary text-white shadow-sm"
+            onclick="setPumpCompleteMode('LITERS')">
+            <span class="material-symbols-outlined text-[16px]">local_gas_station</span>
+            Chốt theo Số Lít
+          </button>
+          <button type="button" id="btn-mode-amount"
+            class="py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all text-secondary hover:text-emerald-700"
+            onclick="setPumpCompleteMode('AMOUNT')">
+            <span class="material-symbols-outlined text-[16px]">payments</span>
+            Chốt theo Số Tiền
+          </button>
+        </div>
+      </div>
+
+      <!-- Ô nhập 1: Nhập Số Lít -->
+      <div id="group-input-liters"
+        class="p-md rounded-xl bg-surface-container-low border border-outline-variant/40 space-y-2">
+        <label class="block text-xs font-bold text-secondary uppercase" for="modal-input-liters">Nhập số lít thực tế đã
+          bơm:</label>
+        <div class="flex items-center gap-2">
+          <input type="number" id="modal-input-liters" step="0.01"
+            class="input-base text-2xl font-black text-primary py-2 px-3 rounded-xl border-2 border-primary/50 focus:border-primary w-full"
+            value="15.00" oninput="onLitersInputChanged()">
+          <span class="text-xl font-bold text-secondary">Lít</span>
+        </div>
+        <!-- Phím tắt chọn nhanh số lít -->
+        <div class="flex items-center gap-1.5 pt-1">
+          <span class="text-[11px] text-secondary">Nhanh:</span>
+          <button type="button" onclick="setQuickLiters(5)"
+            class="px-2 py-0.5 rounded-md bg-white border border-outline-variant/30 hover:bg-primary/10 text-xs font-bold text-secondary hover:text-primary">5L</button>
+          <button type="button" onclick="setQuickLiters(10)"
+            class="px-2 py-0.5 rounded-md bg-white border border-outline-variant/30 hover:bg-primary/10 text-xs font-bold text-secondary hover:text-primary">10L</button>
+          <button type="button" onclick="setQuickLiters(15)"
+            class="px-2 py-0.5 rounded-md bg-white border border-outline-variant/30 hover:bg-primary/10 text-xs font-bold text-secondary hover:text-primary">15L</button>
+          <button type="button" onclick="setQuickLiters(20)"
+            class="px-2 py-0.5 rounded-md bg-white border border-outline-variant/30 hover:bg-primary/10 text-xs font-bold text-secondary hover:text-primary">20L</button>
+        </div>
+      </div>
+
+      <!-- Ô nhập 2: Nhập Số Tiền -->
+      <div id="group-input-amount" class="p-md rounded-xl bg-emerald-50/50 border border-emerald-300 space-y-2 hidden">
+        <label class="block text-xs font-bold text-emerald-900 uppercase" for="modal-input-amount">Nhập số tiền thực tế
+          khách đổ:</label>
+        <div class="flex items-center gap-2">
+          <input type="number" id="modal-input-amount" step="1000"
+            class="input-base text-2xl font-black text-emerald-800 py-2 px-3 rounded-xl border-2 border-emerald-500/50 focus:border-emerald-600 w-full"
+            value="200000" oninput="onAmountInputChanged()">
+          <span class="text-xl font-bold text-emerald-900">đ</span>
+        </div>
+        <!-- Phím tắt chọn nhanh số tiền -->
+        <div class="flex items-center gap-1.5 pt-1">
+          <span class="text-[11px] text-emerald-800">Nhanh:</span>
+          <button type="button" onclick="setQuickAmount(50000)"
+            class="px-2 py-0.5 rounded-md bg-white border border-emerald-300 hover:bg-emerald-100 text-xs font-bold text-emerald-800">50k</button>
+          <button type="button" onclick="setQuickAmount(100000)"
+            class="px-2 py-0.5 rounded-md bg-white border border-emerald-300 hover:bg-emerald-100 text-xs font-bold text-emerald-800">100k</button>
+          <button type="button" onclick="setQuickAmount(200000)"
+            class="px-2 py-0.5 rounded-md bg-white border border-emerald-300 hover:bg-emerald-100 text-xs font-bold text-emerald-800">200k</button>
+          <button type="button" onclick="setQuickAmount(500000)"
+            class="px-2 py-0.5 rounded-md bg-white border border-emerald-300 hover:bg-emerald-100 text-xs font-bold text-emerald-800">500k</button>
+        </div>
+      </div>
+
+      <!-- Tóm tắt quy đổi trực tiếp -->
+      <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-1.5 text-xs">
+        <div class="flex justify-between items-center text-secondary">
+          <span>Đơn giá niêm yết:</span>
+          <span id="modal-unit-price" class="font-bold text-on-surface">20.500 đ/L</span>
+        </div>
+        <div class="flex justify-between items-center text-secondary">
+          <span>Số lượng lít thực tế:</span>
+          <b id="modal-liters-calc" class="font-mono font-bold text-primary text-sm">15.00 Lít</b>
+        </div>
+        <div
+          class="flex justify-between items-center pt-1 border-t border-outline-variant/20 text-sm font-bold text-on-surface">
+          <span>Tổng tiền thanh toán:</span>
+          <span id="modal-total-calc" class="text-xl font-black text-primary">307.500 đ</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-2 pt-2">
+      <button type="button" class="btn-secondary flex-1 py-2.5 text-xs font-bold rounded-xl"
+        onclick="closePumpModal()">Hủy</button>
+      <button type="button"
+        class="btn-primary flex-1 py-2.5 text-xs font-bold rounded-xl shadow-md flex items-center justify-center gap-1"
+        onclick="submitPumpCompleteModal()">
+        <span class="material-symbols-outlined text-sm">check_circle</span> Xuất Hóa Đơn & Trừ Tồn Kho
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 2: NHẬP NHIÊN LIỆU TỪ XE BỒN VÀO BỒN CHỨA -->
+<!-- ========================================================================= -->
+<div id="modal-refill-tank"
+  class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-md hidden backdrop-blur-sm">
+  <div
+    class="card-base max-w-md w-full p-lg rounded-2xl shadow-2xl border border-outline-variant/30 space-y-md bg-white">
+    <div class="flex justify-between items-center pb-sm border-b border-outline-variant/20">
+      <h3 class="text-title-md font-bold text-primary flex items-center gap-1.5">
+        <span class="material-symbols-outlined">local_shipping</span> Nhập Nhiên Liệu Từ Xe Bồn
+      </h3>
+      <button type="button" class="text-secondary hover:text-on-surface" onclick="closeRefillModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="space-y-3 text-xs">
+      <div>
+        <label class="block font-bold text-secondary mb-1">Chọn bồn chứa tiếp nhận:</label>
+        <select id="refill-select-tank"
+          class="input-base w-full py-2 px-3 rounded-xl border border-outline-variant/40 bg-surface">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+
+      <div>
+        <label class="block font-bold text-secondary mb-1">Số lít nhập thêm:</label>
+        <div class="flex items-center gap-2">
+          <input type="number" id="refill-input-liters" step="100"
+            class="input-base text-lg font-bold text-primary py-2 px-3 rounded-xl border border-outline-variant/40 w-full"
+            value="5000">
+          <span class="font-bold text-secondary">Lít</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-bold text-secondary mb-1">Biển số xe bồn & Đơn vị cung ứng:</label>
+        <input type="text" id="refill-input-supplier"
+          class="input-base w-full py-2 px-3 rounded-xl border border-outline-variant/40"
+          placeholder="Nhà cung cấp / chứng từ thực tế (nếu có)">
+      </div>
+    </div>
+
+    <div class="flex gap-2 pt-2">
+      <button type="button" class="btn-secondary flex-1 py-2.5 text-xs font-bold rounded-xl"
+        onclick="closeRefillModal()">Đóng</button>
+      <button type="button"
+        class="btn-primary flex-1 py-2.5 text-xs font-bold rounded-xl shadow-md flex items-center justify-center gap-1"
+        onclick="submitRefillTank()">
+        <span class="material-symbols-outlined text-sm">add_task</span> Xác Nhận Nhập Kho
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 3: XEM CHI TIẾT HÓA ĐƠN BÁN LẺ VAT -->
+<!-- ========================================================================= -->
+<!-- ========================================================================= -->
+<!-- MODAL: BIỂU MẪU ĐĂNG KÝ & CẬP NHẬT HỒ SƠ TRẠM XĂNG (POPUP) -->
+<!-- ========================================================================= -->
+<div id="modal-station-registration"
+  class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 md:p-6 hidden backdrop-blur-sm">
+  <div
+    class="card-base max-w-3xl w-full p-4 md:p-6 rounded-2xl shadow-2xl border border-outline-variant/30 space-y-4 bg-white max-h-[90vh] flex flex-col">
+    <!-- Modal Header -->
+    <div class="flex justify-between items-start pb-3 border-b border-outline-variant/20 shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-2xl">domain_add</span>
+        </div>
+        <div>
+          <h3 id="station-modal-title" class="text-base md:text-lg font-bold text-primary">Đăng Ký Hồ Sơ Trạm Xăng Mới</h3>
+          <p id="station-modal-message" role="alert" aria-live="assertive" class="text-sm font-semibold text-primary"></p>
+          <p id="station-version-note" class="text-xs text-secondary italic font-medium"></p>
+        </div>
+      </div>
+      <button type="button" class="text-secondary hover:text-on-surface p-1.5 rounded-xl hover:bg-surface-container transition-colors" onclick="closeStationModal()" title="Đóng cửa sổ">
+        <span class="material-symbols-outlined text-xl">close</span>
+      </button>
+    </div>
+
+    <!-- Modal Body (Scrollable) -->
+    <div class="overflow-y-auto space-y-5 pr-1 custom-scrollbar flex-1">
+      <p class="text-[11px] text-secondary">
+        Điền thông tin trạm, tọa độ GPS thực tế, chọn danh mục tiện ích và đính kèm giấy phép pháp lý để lưu trạm vào hệ thống.
+      </p>
+
+      <!-- Form thông tin cơ bản -->
+      <form id="station-draft-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-secondary">Tên trạm xăng <span class="text-error">*</span></label>
+          <input class="input-base w-full py-2 px-3 text-xs rounded-xl border border-outline-variant/30" name="tx_ten" required maxlength="64" placeholder="Ví dụ: Petrolimex - Cửa hàng Xăng dầu số 17">
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-secondary">Tuyến đường / Quốc lộ</label>
+          <input class="input-base w-full py-2 px-3 text-xs rounded-xl border border-outline-variant/30" name="tx_trucduong" maxlength="64" placeholder="Ví dụ: Quốc lộ 1A, Đường 3 Tháng 2">
+        </div>
+
+        <div class="space-y-1 md:col-span-2">
+          <label class="block text-xs font-semibold text-secondary">Địa chỉ cụ thể <span class="text-error">*</span></label>
+          <input class="input-base w-full py-2 px-3 text-xs rounded-xl border border-outline-variant/30" name="tx_diachi" required maxlength="128" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành">
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-secondary">Vĩ độ GPS (Latitude) <span class="text-error">*</span></label>
+          <input class="input-base w-full py-2 px-3 text-xs rounded-xl border border-outline-variant/30 font-mono" name="tx_vido" type="number" step="0.00000001" min="-90" max="90" required placeholder="Ví dụ: 10.030249">
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-secondary">Kinh độ GPS (Longitude) <span class="text-error">*</span></label>
+          <input class="input-base w-full py-2 px-3 text-xs rounded-xl border border-outline-variant/30 font-mono" name="tx_kinhdo" type="number" step="0.00000001" min="-180" max="180" required placeholder="Ví dụ: 105.772118">
+        </div>
+
+        <div class="md:col-span-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+          <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-on-surface">
+            <input type="checkbox" name="tx_coconluon" class="w-4 h-4 rounded text-primary">
+            <span>Có dải phân cách / con lươn giữa đường</span>
+          </label>
+          <button id="save-station-draft" class="btn-secondary py-2 px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5" type="submit">
+            <span class="material-symbols-outlined text-base">save</span>
+            <span>Lưu Thông Tin Trạm</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Tiện ích trạm -->
+      <fieldset id="station-amenity-proposal" class="border border-outline-variant/30 rounded-2xl p-4 space-y-3 bg-surface-container-lowest" disabled>
+        <legend id="station-amenity-title" class="font-bold text-xs text-primary px-2 uppercase tracking-wider">Tiện ích trạm xăng</legend>
+        <p id="station-current-amenities" class="text-xs font-medium text-primary"></p>
+        <p id="station-amenity-help" class="text-xs text-secondary leading-relaxed"></p>
+        <div id="station-amenity-options" class="p-3 bg-surface-container-low rounded-xl border border-outline-variant/20 max-h-48 overflow-y-auto space-y-2 text-xs">
+          Lưu trạm nháp trước để tải danh mục tiện ích.
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-outline-variant/20">
+          <p class="text-xs font-medium text-secondary">Số tiện ích đã chọn: <span id="station-amenity-count" class="font-bold text-primary">0</span></p>
+          <button id="save-station-amenities" class="btn-secondary py-1.5 px-3 rounded-lg text-xs font-semibold" type="button" hidden disabled>
+            Lưu Tiện Ích Nháp
+          </button>
+        </div>
+        <p id="station-amenity-save-status" class="text-xs" role="status" aria-live="polite"></p>
+      </fieldset>
+
+      <!-- Minh chứng giấy phép & Hồ sơ đính kèm -->
+      <div class="border border-outline-variant/30 rounded-2xl p-4 space-y-3 bg-surface-container-lowest">
+        <h5 class="font-bold text-xs text-primary uppercase tracking-wider flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-base">upload_file</span>
+          Giấy Phép Kinh Doanh & Minh Chứng Pháp Lý
+        </h5>
+        <p class="text-xs text-secondary">
+          Tải lên bản sao Giấy phép đủ điều kiện bán lẻ xăng dầu, GCN PCCC hoặc tài liệu phê duyệt (PDF, PNG, JPG tối đa 5MB).
+        </p>
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input id="station-evidence-file" type="file" accept=".pdf,.png,.jpg,.jpeg" class="input-base text-xs py-1.5 px-2.5 rounded-xl border border-outline-variant/30 flex-1">
+          <button id="upload-station-evidence" class="btn-secondary py-2 px-3.5 text-xs font-semibold whitespace-nowrap flex items-center justify-center gap-1.5" type="button">
+            <span class="material-symbols-outlined text-base">cloud_upload</span>
+            <span>Tải Lên Minh Chứng</span>
+          </button>
+        </div>
+        <div class="space-y-1">
+          <p class="text-[11px] font-semibold text-secondary">Tài liệu đã đính kèm:</p>
+          <ul id="station-staging-list" class="space-y-1 text-xs"></ul>
+        </div>
+      </div>
+
+      <p id="station-activation-help" role="status" class="text-xs text-secondary"></p>
+      <!-- Kích hoạt có audit -->
+      <div class="pt-3 border-t border-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p class="text-xs text-secondary">
+          Hồ sơ và thông tin trạm sẽ được xác thực và cập nhật trực tiếp vào hệ thống.
+        </p>
+        <button id="submit-station-approval" class="btn-primary py-2.5 px-6 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 shadow-md bg-emerald-700 hover:bg-emerald-800 text-white" type="button">
+          <span class="material-symbols-outlined text-lg">verified</span>
+          <span>Lưu & Kích Hoạt Trạm</span>
+        </button>
+      </div>
+
+      <!-- Lịch sử xét duyệt & Phản hồi -->
+      <div class="border-t border-outline-variant/20 pt-4 space-y-3">
+        <h5 class="font-bold text-xs text-primary uppercase tracking-wider flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-base">history</span>
+          Lịch Sử Hồ Sơ & Kích Hoạt Trạm
+        </h5>
+        <div id="station-approval-history" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="flex justify-end gap-2 pt-3 border-t border-outline-variant/20 shrink-0">
+      <button type="button" class="btn-secondary py-2 px-4 text-xs font-bold rounded-xl" onclick="closeStationModal()">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-view-invoice"
+  class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-md hidden backdrop-blur-sm">
+  <div
+    class="card-base max-w-lg w-full p-lg rounded-2xl shadow-2xl border border-outline-variant/30 space-y-md bg-white">
+    <div class="flex justify-between items-center pb-sm border-b border-outline-variant/20">
+      <h3 class="text-title-md font-bold text-primary flex items-center gap-1.5">
+        <span class="material-symbols-outlined">receipt</span> Hóa Đơn Điện Tử Bán Lẻ Xăng Dầu
+      </h3>
+      <button type="button" class="text-secondary hover:text-on-surface" onclick="closeInvoiceModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div
+      class="p-md rounded-2xl border border-outline-variant/30 bg-surface-container-lowest font-mono text-xs space-y-2"
+      id="invoice-modal-content">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <button type="button" class="btn-secondary py-2 px-4 text-xs font-bold rounded-xl"
+        onclick="closeInvoiceModal()">Đóng</button>
+      <button type="button" class="btn-primary py-2 px-4 text-xs font-bold rounded-xl flex items-center gap-1"
+        onclick="window.print()">
+        <span class="material-symbols-outlined text-sm">print</span> In hóa đơn
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/enterprise_operations_ui.js?v=5.8c1"></script>
+<script src="/static/js/live_sync.js?v=1"></script>
+<script src="/static/js/shift_voice.js?v=1"></script>
+<script>
+  function openStationModal(mode = "create") {
+    const modal = document.getElementById("modal-station-registration");
+    const title = document.getElementById("station-modal-title");
+    if (title) {
+      title.textContent = mode === "create" ? "Đăng Ký Hồ Sơ Trạm Xăng Mới" : "Cập Nhật Hồ Sơ Trạm Xăng";
+    }
+    if (modal) modal.classList.remove("hidden");
+  }
+
+  function closeStationModal() {
+    const modal = document.getElementById("modal-station-registration");
+    if (modal) modal.classList.add("hidden");
+  }
+  window.openStationModal = openStationModal;
+  window.closeStationModal = closeStationModal;
+
+  function escapeOperationalText(value) {
+    const span = document.createElement('span');
+    span.textContent = String(value ?? '');
+    return span.innerHTML;
+  }
+  window.escapeOperationalText = escapeOperationalText;
+
+  // Chuyển hướng ngay lập tức nếu truy cập tab orders cũ sang trang Tiếp Nhận Bơm Xăng
+  const urlTab = new URLSearchParams(location.search).get('ops_tab');
+  const urlStation = new URLSearchParams(location.search).get('ops_station');
+  if (urlTab === 'orders') {
+    window.location.replace(`/TiepNhanBom.html${urlStation ? '?ops_station=' + encodeURIComponent(urlStation) : ''}`);
+  }
+
+  let enterpriseStations = [];
+  let currentStation = null;
+  const operationTabs = ["stations", "pumps", "inventory", "prices", "invoices", "reconciliation"];
+  let activeTab = operationTabs.includes(urlTab) ? urlTab : "pumps";
+  let activeModalYcMa = null;
+  let activeModalUnitPrice = null;
+  let activeModalTankCurrentLiters = null;
+  let currentInventoryData = null;
+  let currentOrderRows = null;
+  let enterpriseInvoices = [];
+  const stationScope = PetroEnterpriseUI.createScope();
+  window.PetroStationScope = stationScope;
+  let stationListVersion = 0;
+  const ordersPoll = PetroLive.createPoll(loadOrders, {interval:1500});
+  const shiftVoice = PetroShiftVoice.create({
+    notice(message) {
+      let el=document.getElementById('shift-voice-notice');
+      if(!el){el=document.createElement('p');el.id='shift-voice-notice';el.setAttribute('role','status');document.getElementById('panel-dn-orders')?.prepend(el);}
+      el.textContent=message;
+    },
+    state(on){const icon=document.getElementById('icon-voice-status'),label=document.getElementById('text-voice-status');
+      if(icon)icon.textContent=on?'volume_up':'volume_off';
+      if(label)label.textContent=on?'Loa ca trực: BẬT':'Bật loa tiếng Việt';}
+  });
+
+
+  function clearStationDashboard(message = 'Đang tải trạm…') {
+    ordersPoll.stop(); shiftVoice.clear(); announcedOrderIds.clear(); hasDoneInitialLoad=false;
+    stationScope.select(null); currentStation = null; currentInventoryData = null; enterpriseInvoices = []; currentOrderRows = null;
+    activeModalYcMa = activeModalUnitPrice = activeModalTankCurrentLiters = null;
+    for (const id of ['modal-pump-complete', 'modal-refill-tank', 'modal-view-invoice']) document.getElementById(id)?.classList.add('hidden');
+    for (const dialog of document.querySelectorAll('dialog[open]')) {
+      dialog.dispatchEvent(new Event('cancel', { cancelable: true })); if (dialog.open) dialog.close();
+    }
+    document.getElementById('cash-receipt-dialog')?.remove();
+    for (const id of ['dn-orders-table-body', 'closed-request-history', 'dn-invoices-table-body', 'dn-fuel-breakdown-body', 'dn-refill-history-body', 'dn-fuel-price-cards', 'invoice-modal-content']) document.getElementById(id)?.replaceChildren();
+    for (const id of ['stat-kpi-revenue', 'stat-kpi-liters', 'stat-kpi-cash', 'stat-kpi-digital', 'stat-kpi-orders', 'dn-invoices-count', 'rec-cash-amount', 'rec-cash-liters', 'rec-cash-orders', 'rec-cash-pct', 'rec-digital-amount', 'rec-digital-liters', 'rec-digital-orders', 'rec-digital-pct']) { const el = document.getElementById(id); if (el) el.textContent = '—'; }
+    document.getElementById('badge-pending-count')?.classList.add('hidden');
+    document.getElementById('orders-lifecycle-feedback')?.replaceChildren();
+    inventoryLoadState('loading');
+    document.getElementById('station-display-name').textContent = message;
+    document.getElementById('dn-title').textContent = 'Quản Lý Trạm Xăng & Vận Hành';
+    document.getElementById('ops-pump-count').textContent = '—';
+    document.getElementById('station-display-code').textContent = '—';
+    document.getElementById('station-display-address').textContent = '';
+  }
+  function stationError(error, ticket) {
+    if (!stationScope.current(ticket)) return;
+    if ([401, 403, 404].includes(error.status)) {
+      clearStationDashboard('Trạm không còn truy cập được.');
+      document.getElementById('operations-station-select').value = '';
+    }
+    document.getElementById('operations-station-feedback').textContent = error.message;
+    document.getElementById('operations-station-retry').classList.remove('hidden');
+  }
+  async function stationResponse(response, ticket) {
+    const data = await response.json();
+    if (!response.ok) { const error = new Error(typeof data.detail === 'string' ? data.detail : 'Không thể tải dữ liệu trạm.'); error.status = response.status; stationError(error, ticket); throw error; }
+    return data;
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    switchDnTab(activeTab);
+    document.getElementById('operations-station-select').addEventListener('change', event => { if (event.target.value) loadAllEnterpriseData(event.target.value); });
+    window.addEventListener('popstate', () => { const tab = new URLSearchParams(location.search).get('ops_tab'); if (operationTabs.includes(tab)) switchDnTab(tab, false); loadAllEnterpriseData(null, false); });
+    loadAllEnterpriseData();
+
+  });
+
+  // Quản lý gán cột bơm & Loa giọng nói thông báo ca trực
+  let voiceAlertEnabled = true;
+  let announcedOrderIds = new Set();
+  let hasDoneInitialLoad = false;
+  let orderPumpAssignments = {};
+  try {
+    orderPumpAssignments = JSON.parse(localStorage.getItem("petro_order_pumps") || "{}");
+  } catch (e) { }
+
+  function toggleVoiceAlert() { voiceAlertEnabled=shiftVoice.toggle(); }
+  function speakVoiceAlert(text) { shiftVoice.speak(text); }
+
+  function assignPump(yc_ma, pumpNumber) {
+    if (orderPumpAssignments[yc_ma] === pumpNumber) {
+      delete orderPumpAssignments[yc_ma];
+    } else {
+      orderPumpAssignments[yc_ma] = pumpNumber;
+    }
+    try {
+      localStorage.setItem("petro_order_pumps", JSON.stringify(orderPumpAssignments));
+    } catch (e) { }
+    renderOrders(currentOrderRows);
+  }
+
+  // Chế độ ca trực bán xăng Kiosk / POS Mode cho nhân viên cây xăng
+  let isKioskMode = false;
+  function toggleKioskMode() {
+    isKioskMode = !isKioskMode;
+    const btn = document.getElementById("btn-toggle-kiosk");
+    const kpiCards = document.querySelector(".grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-4");
+
+    if (isKioskMode) {
+      switchDnTab('orders');
+      if (btn) btn.innerHTML = `<span class="material-symbols-outlined text-[16px]">close</span><span>Thoát Ca Trực</span>`;
+      if (btn) btn.className = "btn-secondary py-1.5 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm whitespace-nowrap text-error border-error/30 hover:bg-error/10";
+      if (kpiCards) kpiCards.classList.add("hidden");
+      document.body.classList.add("kiosk-active");
+      document.getElementById("panel-dn-orders")?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      if (btn) btn.innerHTML = `<span class="material-symbols-outlined text-[16px]">touch_app</span><span>Chế độ Ca Trực (POS)</span>`;
+      if (btn) btn.className = "btn-primary py-1.5 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm whitespace-nowrap bg-emerald-700 hover:bg-emerald-800 text-white";
+      if (kpiCards) kpiCards.classList.remove("hidden");
+      document.body.classList.remove("kiosk-active");
+    }
+  }
+
+  // Switch Tab
+  function switchDnTab(tabName, recordURL = true) {
+    if (!operationTabs.includes(tabName)) return;
+    activeTab = tabName;
+    if (recordURL && currentStation) {
+      try {
+        const targetUrl = PetroEnterpriseUI.operationURL(location.href, currentStation.tx_ma, activeTab);
+        history.replaceState(null, '', targetUrl.href || targetUrl.toString());
+      } catch (err) {
+        console.warn("Could not update history state:", err);
+      }
+    }
+    const tabBtns = ["stations", "orders", "pumps", "inventory", "prices", "invoices", "reconciliation"];
+
+    let targetPanel = null;
+    tabBtns.forEach(t => {
+      const btn = document.getElementById(`tab-btn-${t}`);
+      const panel = document.getElementById(`panel-dn-${t}`);
+      if (!btn || !panel) return;
+      if (t === tabName) {
+        targetPanel = panel;
+        btn.className = "w-full text-left py-2.5 px-3.5 rounded-xl font-bold text-xs md:text-sm bg-primary/10 text-primary border border-primary/20 shadow-xs transition-all flex items-center gap-2.5";
+        panel.classList.remove("hidden");
+      } else {
+        btn.className = "w-full text-left py-2.5 px-3.5 rounded-xl font-medium text-xs md:text-sm text-secondary hover:text-primary hover:bg-surface-container-low transition-all flex items-center gap-2.5";
+        panel.classList.add("hidden");
+      }
+    });
+
+    // Auto-scroll to panel on mobile/tablet screens so user sees tab content immediately
+    if (window.innerWidth < 1024 && targetPanel) {
+      targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    if (tabName === "pumps" || tabName === "inventory") {
+      fetchInventoryData();
+    } else if (tabName === "prices") {
+      if (currentStation?.prices) {
+        renderPriceCards(currentStation.prices);
+      } else if (!currentStation) {
+        const container = document.getElementById("dn-fuel-price-cards");
+        if (container) container.innerHTML = '<div class="col-span-full py-8 text-center text-secondary">Chưa có trạm xăng nào được chọn để cập nhật giá.</div>';
+      }
+    } else if (tabName === "invoices") {
+      fetchInvoicesData();
+    } else if (tabName === "reconciliation") {
+      fetchReconciliationData();
+    }
+  }
+  window.switchDnTab = switchDnTab;
+
+  // Revalidate the trusted private list on every selection/refresh.
+  async function loadAllEnterpriseData(requestedStationId = null, recordHistory = true) {
+    const version = ++stationListVersion;
+    const wanted = requestedStationId || new URLSearchParams(location.search).get('ops_station') || currentStation?.tx_ma;
+    clearStationDashboard();
+    const picker = document.getElementById('operations-station-select'); picker.disabled = true;
+    const feedback = document.getElementById('operations-station-feedback'); feedback.textContent = 'Đang xác minh danh sách trạm…';
+    document.getElementById('operations-station-retry').classList.add('hidden');
+    try {
+      const res = await fetch("/api/doanh-nghiep/stations");
+      if (version !== stationListVersion) return;
+      if (!res.ok) {
+        if (res.status === 403 || res.status === 401) {
+          alert("Vui lòng đăng nhập với tài khoản Doanh nghiệp!");
+          window.location.href = "/DangNhap.html";
+          return;
+        }
+        throw new Error("Không thể tải thông tin trạm xăng");
+      }
+      const data = await res.json();
+      if (version !== stationListVersion) return;
+      enterpriseStations = data.stations || [];
+      const selection = PetroEnterpriseUI.choose(enterpriseStations, wanted);
+      picker.replaceChildren(...selection.stations.map(station => { const option = document.createElement('option'); option.value = station.tx_ma; option.textContent = `${station.tx_ten} — ${station.tx_ma}`; return option; }));
+      currentStation = selection.selected;
+      picker.disabled = !currentStation;
+      feedback.textContent = selection.missing ? 'Trạm đã chọn không còn truy cập được. Đã chuyển sang trạm được phép đầu tiên.' : '';
+      if (!currentStation) {
+        document.getElementById("station-display-name").textContent = "Chưa có trạm được duyệt để vận hành";
+        feedback.textContent = 'Chưa có trạm được phê duyệt vận hành. Quý doanh nghiệp hãy quản lý hồ sơ và đăng ký trạm tại mục "Danh Sách & Đăng Ký Trạm".';
+        inventoryLoadState('error', 'Chưa có trạm được phê duyệt vận hành.');
+        history.replaceState(null, '', PetroEnterpriseUI.operationURL(location.href, null, activeTab));
+        switchDnTab('stations');
+        return;
+      }
+      stationScope.select(currentStation.tx_ma);
+      ordersPoll.start();
+      picker.value = currentStation.tx_ma;
+      const url = PetroEnterpriseUI.operationURL(location.href, currentStation.tx_ma, activeTab);
+      if (recordHistory && requestedStationId && url.search !== location.search) history.pushState(null, '', url);
+      else history.replaceState(null, '', url);
+
+      // Cập nhật giao diện Header cố định trạm duy nhất
+      const titleEl = document.getElementById("dn-title");
+      if (titleEl) titleEl.textContent = `Quản Lý Trạm - ${currentStation.tx_ten}`;
+
+      const nameEl = document.getElementById("station-display-name");
+      if (nameEl) nameEl.textContent = currentStation.tx_ten;
+
+      const codeEl = document.getElementById("station-display-code");
+      if (codeEl) codeEl.textContent = currentStation.tx_ma;
+
+      // Cập nhật link sang màn hình Tiếp Nhận Bơm Xăng
+      const jumpTiepNhan = document.getElementById("btn-jump-to-tiepnhan");
+      if (jumpTiepNhan) jumpTiepNhan.href = `/TiepNhanBom.html?ops_station=${encodeURIComponent(currentStation.tx_ma)}`;
+      const bannerTiepNhan = document.getElementById("btn-banner-tiepnhan");
+      if (bannerTiepNhan) bannerTiepNhan.href = `/TiepNhanBom.html?ops_station=${encodeURIComponent(currentStation.tx_ma)}`;
+      const redirectTiepNhan = document.getElementById("btn-redirect-tiepnhan");
+      if (redirectTiepNhan) redirectTiepNhan.href = `/TiepNhanBom.html?ops_station=${encodeURIComponent(currentStation.tx_ma)}`;
+      const tabOrdersLink = document.getElementById("tab-btn-orders");
+      if (tabOrdersLink) tabOrdersLink.href = `/TiepNhanBom.html?ops_station=${encodeURIComponent(currentStation.tx_ma)}`;
+
+      // Render bảng giá nhiên liệu của trạm
+      renderPriceCards(currentStation.prices || []);
+
+      // Tải dữ liệu toàn bộ module của trạm duy nhất
+      await Promise.all([
+        fetchOrdersOnly(),
+        fetchInventoryData(),
+        fetchReconciliationData(),
+        fetchInvoicesData(),
+      ]);
+    } catch (e) {
+      if (version !== stationListVersion) return;
+      clearStationDashboard('Không thể tải trạm vận hành.'); picker.replaceChildren(); picker.disabled = true;
+      feedback.textContent = e.message; document.getElementById('operations-station-retry').classList.remove('hidden');
+      inventoryLoadState('error', e.message);
+    }
+  }
+
+  // ==========================================================
+  // 1. ORDERS MODULE (Yêu cầu phục vụ & Chỉ số lít còn)
+  // ==========================================================
+  function fetchOrdersOnly() { return ordersPoll.refresh(); }
+
+  async function loadOrders(signal) {
+    if (!currentStation) return;
+    const sid = currentStation.tx_ma;
+    const ticket = stationScope.begin('orders');
+    let feedback = document.getElementById('orders-lifecycle-feedback');
+    if (!feedback) { feedback = document.createElement('div'); feedback.id = 'orders-lifecycle-feedback'; feedback.setAttribute('role', 'status'); document.getElementById('panel-dn-orders').prepend(feedback); }
+    feedback.textContent = 'Đang tải trạng thái yêu cầu…';
+    try {
+      const res = await fetch(`/api/doanh-nghiep/orders?tx_ma=${encodeURIComponent(sid)}&history_limit=30`, {signal, cache:"no-store"});
+      const data = await stationResponse(res, ticket);
+      if (signal.aborted || !stationScope.current(ticket)) return;
+      feedback.textContent = '';
+      let history = document.getElementById('closed-request-history');
+      if (!history) { history = document.createElement('details'); history.id = 'closed-request-history'; document.getElementById('panel-dn-orders').append(history); }
+      history.replaceChildren(); const summary = document.createElement('summary'); summary.textContent = 'Yêu cầu đã hủy / hết hạn / từ chối'; history.append(summary);
+      for (const row of [...(data.cancelled_orders || []), ...(data.expired_orders || []), ...(data.rejected_orders || [])]) {
+        const line = document.createElement('p'); line.textContent = `${row.yc_ma} — ${row.status_text} — ${row.close_reason || 'Không có phản hồi'} — ${row.closed_by || (row.closed_at ? 'Hệ thống' : 'Không có thông tin người xử lý (dữ liệu cũ)')}`; history.append(line);
+      }
+      const activeList = data.active_orders || (data.orders ? data.orders.filter(o => !o.is_rejected && !o.is_paid) : []);
+      const serviceTotal = data.service_queue_total ?? activeList.filter(o => ['WAITING', 'ACCEPTED', 'PUMPING'].includes(o.phase)).length;
+      document.getElementById("stat-kpi-orders").textContent = serviceTotal;
+      const sidebarBadge = document.getElementById("badge-sidebar-orders");
+      if (sidebarBadge) sidebarBadge.textContent = `${serviceTotal} xe`;
+      currentOrderRows = activeList;
+      renderOrders(activeList);
+    } catch (e) {
+      if(signal.aborted && signal.reason?.name!=="TimeoutError")return; if (stationScope.current(ticket)) { feedback.textContent = e.message; const retry = document.createElement('button'); retry.textContent = 'Thử lại'; retry.className = 'p-3 border rounded-xl'; retry.onclick = fetchOrdersOnly; feedback.append(retry); } throw e; }
+  }
+
+  function renderOrders(orders) {
+    const activeOrders = (orders || []).filter(o => !o.is_rejected && !o.is_paid);
+    let pendingCount = activeOrders.filter(o => o.phase === "WAITING").length;
+    const badgePending = document.getElementById("badge-pending-count");
+    if (badgePending) {
+      if (pendingCount > 0) {
+        badgePending.textContent = `${pendingCount} mới`;
+        badgePending.classList.remove("hidden");
+      } else {
+        badgePending.classList.add("hidden");
+      }
+    }
+
+    // A successful empty initial load is a baseline too. Renders never replay IDs.
+    activeOrders.forEach(o => {
+      if (['WAITING','ACCEPTED'].includes(o.phase) && !announcedOrderIds.has(o.yc_ma)) {
+        announcedOrderIds.add(o.yc_ma);
+        if (hasDoneInitialLoad) speakVoiceAlert(PetroShiftVoice.orderText(o));
+      }
+    });
+    hasDoneInitialLoad = true;
+
+    const tbody = document.getElementById("dn-orders-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (activeOrders.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="py-10 text-center">
+            <div class="flex flex-col items-center justify-center gap-2 text-secondary">
+              <span class="material-symbols-outlined text-4xl text-emerald-500">task_alt</span>
+              <p class="text-sm font-semibold text-on-surface">Không có yêu cầu nào đang chờ phục vụ tại trạm.</p>
+              <p class="text-xs">Các giao dịch đã thanh toán thành công được lưu trữ đầy đủ tại mục <b>Hóa Đơn Bán Hàng</b>.</p>
+              <button type="button" onclick="switchDnTab('invoices')" class="btn-secondary py-1.5 px-3 mt-1 text-xs font-bold rounded-xl border border-primary/30 text-primary hover:bg-primary/10 flex items-center gap-1">
+                <span class="material-symbols-outlined text-base">receipt_long</span> Xem hóa đơn đã thanh toán
+              </button>
+            </div>
+          </td>
+        </tr>`;
+      if (badgePending) badgePending.classList.add("hidden");
+      return;
+    }
+
+    activeOrders.forEach((o, idx) => {
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-primary/5 transition-colors";
+
+      const qtyDisplay = o.liters ? `${o.liters} Lít` : (o.amount ? `${o.amount.toLocaleString()} đ` : "Đầy bình");
+
+      let statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-gray-100 text-secondary border border-gray-200">${o.status_text}</span>`;
+      let actionHtml = `<span class="text-xs text-secondary">--</span>`;
+
+      // Cột chỉ số bồn & số lít còn lại
+      let tankDisplay = `<span class="text-xs text-secondary">--</span>`;
+      if (o.tank_name && o.tank_remaining !== null) {
+        tankDisplay = `
+          <div>
+            <div class="text-xs font-bold text-on-surface truncate">${escapeOperationalText(PetroEnterpriseUI.tankLabel(o.tank_name, currentInventoryData, currentStation?.tx_ma))}</div>
+            <div class="text-xs text-blue-700 font-mono font-bold">Còn: ${o.tank_remaining.toLocaleString()} L (${o.tank_percentage}%)</div>
+          </div>
+        `;
+      }
+
+      // Cột 1: Thứ tự hàng chờ & Giờ xe đến (Xe đến trước đổ trước)
+      let queueCol = `
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-full bg-surface-container-high text-secondary font-bold text-xs flex items-center justify-center border border-outline-variant/40">
+            ${o.queue_order ? '#' + o.queue_order : '✓'}
+          </span>
+          <div>
+            <div class="text-xs font-semibold text-secondary">${o.queue_order ? 'Đợi lượt' : 'Đã bơm · đối soát'}</div>
+            <div class="text-[11px] text-secondary font-mono">${o.created_time || '--'}</div>
+          </div>
+        </div>
+      `;
+
+      if (o.is_next_in_queue) {
+        queueCol = `
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow-sm ring-2 ring-emerald-300">
+              #1
+            </span>
+            <div>
+              <div class="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                Ưu tiên #1
+              </div>
+              <div class="text-[11px] text-secondary font-mono font-bold">${o.created_time || '--'}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (o.phase === "WAITING") {
+        tr.className = o.is_next_in_queue
+          ? "bg-emerald-50/60 hover:bg-emerald-50 transition-colors border-l-4 border-l-emerald-500"
+          : "bg-amber-50/50 hover:bg-amber-50 transition-colors border-l-4 border-l-amber-500";
+        statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">Chờ xác nhận</span>`;
+        actionHtml = `
+          <div class="flex items-center justify-center gap-1.5">
+            <button type="button" onclick="confirmOrderStart(${petroEscapeHtml(JSON.stringify(o.yc_ma))})" class="btn-primary py-1.5 px-3 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center gap-1 shadow-sm">
+              <span class="material-symbols-outlined text-[16px]">check_circle</span> Tiếp nhận
+            </button>
+            <button type="button" onclick="rejectWaitingOrder(${petroEscapeHtml(JSON.stringify(o.yc_ma))})" class="p-3 border rounded-xl text-red-700">
+              Từ chối
+            </button>
+          </div>
+        `;
+      } else if (o.phase === 'ACCEPTED') {
+        statusBadge = '<span class="font-bold text-primary">Đã giữ chỗ — chưa bơm</span>';
+        actionHtml = `<button type="button" class="p-3 border rounded-xl" onclick="window.PetroOperations.start(${petroEscapeHtml(JSON.stringify(o.yc_ma))})">Bắt đầu bơm</button><button type="button" class="p-3 border rounded-xl" onclick="cancelOrderByEnterprise(${petroEscapeHtml(JSON.stringify(o.yc_ma))})">Hủy trước khi bơm</button>`;
+      } else if (o.phase === "PUMPING") {
+        tr.className = "bg-blue-50/40 hover:bg-blue-50 transition-colors border-l-4 border-l-primary";
+        statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-blue-100 text-primary border border-blue-300">Đang bơm</span>`;
+        actionHtml = `
+          <div class="flex items-center justify-center gap-1.5">
+            <button type="button" onclick="openPumpCompleteModal(${petroEscapeHtml(JSON.stringify(o.yc_ma))}, ${petroEscapeHtml(JSON.stringify(o.tx_ten))}, ${petroEscapeHtml(JSON.stringify(o.fuel_name))}, ${petroEscapeHtml(JSON.stringify(o.plate))}, ${petroEscapeHtml(JSON.stringify(o.tank_name || ''))}, ${o.tank_remaining ?? 0}, ${petroEscapeHtml(JSON.stringify(o.mode || ''))}, ${o.liters || 0}, ${o.amount || 0})" class="btn-primary py-1.5 px-3 text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-sm" title="Chốt số lít hoặc số tiền thực tế">
+              <span class="material-symbols-outlined text-[16px]">receipt_long</span> Chốt số lít / tiền
+            </button>
+            <button type="button" disabled title="Đang bơm: liên hệ tại trạm để dừng thực tế và đối soát; không tự hủy hoặc hoàn tồn" class="p-1.5 rounded-xl border border-red-200 text-red-600 flex items-center text-xs font-semibold">
+              <span class="material-symbols-outlined text-[16px]">cancel</span>
+            </button>
+          </div>
+        `;
+      } else if (o.phase === "PAYMENT_PENDING") {
+        tr.className = "bg-orange-50/40 hover:bg-orange-50 transition-colors border-l-4 border-l-orange-500";
+        statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-orange-100 text-orange-800 border border-orange-300">Chờ thanh toán</span>`;
+        actionHtml = `
+          <div class="flex flex-col gap-1 items-center">
+            <button type="button" onclick="confirmCashReceipt('${o.gd_ma}')" class="btn-secondary py-1.5 px-3 text-xs font-bold rounded-xl border border-emerald-600 text-emerald-700 hover:bg-emerald-50 flex items-center justify-center gap-1 shadow-sm">
+              <span class="material-symbols-outlined text-[16px]">payments</span> Thu tiền mặt
+            </button>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] text-secondary">Hoặc chờ quét QR</span>
+              <button type="button" disabled title="Đã bơm và có hóa đơn: giữ nguyên để đối soát, không hủy hoặc tự hoàn tồn" class="text-[10px] text-red-600 flex items-center">
+                Hủy
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (o.phase === 'PAYMENT_FAILED') {
+        statusBadge = '<span class="text-red-700 font-bold">Thanh toán thất bại — cần đối soát</span>';
+        actionHtml = '<span>Không bơm lại hoặc tự hoàn kho.</span>';
+      } else {
+        actionHtml = '<span>Cần đối soát trạng thái; không tự suy diễn.</span>';
+      }
+
+      if (o.operational_read_only) {
+        actionHtml = '<span class="text-xs">Đơn trước cutover: chỉ đọc, chờ đối soát; không tự bơm hoặc thanh toán.</span>';
+        queueCol = '<span class="text-xs">Lịch sử trước cutover</span>';
+      }
+      if (!currentInventoryData && !o.operational_read_only) actionHtml = '<span class="text-xs">Đang chờ cấu hình vận hành của trạm.</span>';
+      // Gắn đơn hàng với "Cột bơm số 1, 2, 3..." tránh nhân viên bơm nhầm vòi
+      const assignedPump = orderPumpAssignments[o.yc_ma] || null;
+      const pumpSelectorHtml = `
+        <div class="mt-1.5 flex items-center gap-1.5 flex-wrap">
+          <span class="text-[10px] text-secondary font-bold shrink-0">Gán cột:</span>
+          <div class="inline-flex rounded-lg border border-outline-variant/40 bg-surface-container-low p-0.5 gap-0.5">
+            ${[1, 2, 3, 4].map(pNum => `
+              <button type="button" onclick="assignPump('${o.yc_ma}', ${pNum})" class="px-2 py-0.5 rounded text-[11px] font-bold transition-all ${assignedPump === pNum ? 'bg-primary text-white shadow-xs' : 'text-secondary hover:text-primary'}">
+                #${pNum}
+              </button>
+            `).join('')}
+          </div>
+          ${assignedPump ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-black uppercase bg-emerald-700 text-white shadow-xs">Cột bơm #${assignedPump}</span>` : ''}
+        </div>
+      `;
+
+      /* [Ghi chú] Code dòng tr gốc:
+      tr.innerHTML = `
+        <td class="py-3 px-4">${queueCol}</td>
+        <td class="py-3 px-4 font-mono font-bold text-primary">${o.yc_ma}</td>
+        <td class="py-3 px-4"><span class="font-mono font-black text-base md:text-lg text-primary tracking-wider px-2.5 py-1 bg-surface-container-low border border-outline-variant/30 rounded-lg shadow-2xs inline-block">${o.plate}</span></td>
+        <td class="py-3 px-4 text-secondary font-medium">${o.fuel_name}</td>
+        <td class="py-3 px-4 font-semibold text-primary">${qtyDisplay}</td>
+        <td class="py-3 px-4">${tankDisplay}</td>
+        <td class="py-3 px-4">${statusBadge}</td>
+        <td class="py-3 px-4 text-center">${actionHtml}</td>
+      `;
+      */
+      tr.innerHTML = `
+        <td class="py-3 px-4">${queueCol}</td>
+        <td class="py-3 px-4 font-mono font-bold text-primary kiosk-secondary-info">${o.yc_ma}</td>
+        <td class="py-3 px-4">
+          <span class="font-mono font-black text-base md:text-lg text-primary tracking-wider px-2.5 py-1 bg-surface-container-low border border-outline-variant/30 rounded-lg shadow-2xs inline-block kiosk-big-plate">${o.plate}</span>
+          ${pumpSelectorHtml}
+        </td>
+        <td class="py-3 px-4 text-secondary font-medium"><span class="kiosk-big-fuel">${o.fuel_name}</span></td>
+        <td class="py-3 px-4 font-semibold text-primary"><span class="kiosk-big-fuel">${qtyDisplay}</span></td>
+        <td class="py-3 px-4 kiosk-secondary-info">${tankDisplay}</td>
+        <td class="py-3 px-4">${statusBadge}</td>
+        <td class="py-3 px-4 text-center">${actionHtml}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    if (badgePending) {
+      if (pendingCount > 0) {
+        badgePending.textContent = `${pendingCount} mới`;
+        badgePending.classList.remove("hidden");
+      } else {
+        badgePending.classList.add("hidden");
+      }
+    }
+  }
+
+  // Tiếp nhận bơm xăng (TTXN0001 -> TTXN0002)
+  async function confirmOrderStart(yc_ma) {
+    if (window.PetroOperations) return window.PetroOperations.accept(yc_ma);
+    try {
+      const res = await fetch(`/api/workflow/fuel-requests/${yc_ma}/confirm-pump`, { method: "POST" });
+      if (!res.ok) throw new Error("Lỗi khi tiếp nhận yêu cầu");
+      await fetchOrdersOnly();
+    } catch (e) {
+      alert("Lỗi: " + e.message);
+    }
+  }
+
+  async function rejectWaitingOrder(yc_ma) {
+    const action = stationScope.capture(); if (!stationScope.current(action)) return;
+    const intent = await PetroLifecycle.confirmAction('Từ chối yêu cầu ' + yc_ma); if (!intent || !stationScope.current(action)) return;
+    try { const res = await fetch(`/api/workflow/fuel-requests/${yc_ma}/reject`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(intent) }); const body = await res.json(); if (!stationScope.current(action)) return; if (!res.ok) throw new Error(body.detail || 'Không thể từ chối'); await fetchOrdersOnly(); } catch (error) { if (stationScope.current(action)) alert(error.message); }
+  }
+
+  let activeModalMode = "LITERS"; // "LITERS" or "AMOUNT"
+
+  // Mở modal chốt số lít / tiền (Kèm chỉ số bồn trước và sau bơm)
+  async function openPumpCompleteModal(yc_ma, station_name, fuel_name, plate, tank_name, tank_current, req_mode, req_liters, req_amount) {
+    const action = stationScope.capture(); if (!stationScope.current(action)) return;
+    activeModalYcMa = yc_ma;
+    document.getElementById("modal-yc-ma").textContent = yc_ma;
+    document.getElementById("modal-plate").textContent = plate;
+    document.getElementById("modal-fuel").textContent = fuel_name;
+
+    activeModalTankCurrentLiters = tank_current ?? 0;
+    document.getElementById("modal-tank-name").textContent = PetroEnterpriseUI.tankLabel(tank_name, currentInventoryData, currentStation?.tx_ma) || "Bồn ngầm trạm";
+    document.getElementById("modal-tank-before").textContent = `${activeModalTankCurrentLiters.toLocaleString()} Lít`;
+
+    // Lấy đơn giá trạm
+    if (currentStation && currentStation.prices && Array.isArray(currentStation.prices)) {
+      const matchPrice = currentStation.prices.find(p =>
+        p.nl_ten === fuel_name ||
+        (fuel_name && p.nl_ten && (fuel_name.includes(p.nl_ten) || p.nl_ten.includes(fuel_name))) ||
+        (p.nl_ma && p.nl_ma === fuel_name)
+      );
+      activeModalUnitPrice = matchPrice ? Number(matchPrice.dongia !== undefined ? matchPrice.dongia : matchPrice.gia_niem_yet) : null;
+    }
+    if (!(activeModalUnitPrice > 0)) {
+      alert("Chưa có giá nhiên liệu cho trạm này. Vui lòng cập nhật bảng giá trước khi chốt đơn.");
+      return;
+    }
+    if (window.PetroOperations) {
+      try {
+        const response = await fetch(`/api/workflow/fuel-requests/${encodeURIComponent(yc_ma)}`);
+        const request = await response.json();
+        if (!stationScope.current(action)) return;
+        if (!response.ok || !(request.dongia > 0)) throw new Error('Không đọc được giá đã chốt');
+        if (currentStation?.tx_ma !== request.tx_ma) throw new Error('Đã đổi trạm; mở lại đơn');
+        activeModalUnitPrice = request.dongia;
+      } catch (error) { if (stationScope.current(action)) alert(error.message); return; }
+    }
+    document.getElementById("modal-unit-price").textContent = `${activeModalUnitPrice.toLocaleString()} đ/L`;
+
+    // Hiển thị thông tin yêu cầu ban đầu của khách
+    const reqDisplayEl = document.getElementById("modal-requested-display");
+    if (reqDisplayEl) {
+      if (req_mode === "SO_TIEN" && req_amount > 0) {
+        reqDisplayEl.textContent = `${req_amount.toLocaleString()} đ (Khách yêu cầu theo số tiền)`;
+      } else if (req_mode === "SO_LIT" && req_liters > 0) {
+        reqDisplayEl.textContent = `${req_liters.toLocaleString()} Lít (Khách yêu cầu theo số lít)`;
+      } else if (req_mode === "DO_DAY_BINH") {
+        reqDisplayEl.textContent = "Đổ đầy bình";
+      } else {
+        reqDisplayEl.textContent = req_amount > 0 ? `${req_amount.toLocaleString()} đ` : (req_liters > 0 ? `${req_liters} Lít` : "Mặc định");
+      }
+    }
+
+    // Tự động chọn tab phù hợp với yêu cầu ban đầu của khách
+    if (req_mode === "SO_TIEN" && req_amount > 0) {
+      document.getElementById("modal-input-amount").value = req_amount;
+      const initialLiters = parseFloat((req_amount / activeModalUnitPrice).toFixed(2));
+      document.getElementById("modal-input-liters").value = initialLiters;
+      setPumpCompleteMode("AMOUNT");
+    } else {
+      const initialLiters = (req_mode === "SO_LIT" && req_liters > 0) ? req_liters : 15.0;
+      document.getElementById("modal-input-liters").value = initialLiters;
+      document.getElementById("modal-input-amount").value = Math.round(initialLiters * activeModalUnitPrice);
+      setPumpCompleteMode("LITERS");
+    }
+
+    calculateModalTotal();
+    document.getElementById("modal-pump-complete").classList.remove("hidden");
+  }
+
+  function closePumpModal() {
+    document.getElementById("modal-pump-complete").classList.add("hidden");
+  }
+
+  function setPumpCompleteMode(mode) {
+    activeModalMode = mode;
+    const btnLiters = document.getElementById("btn-mode-liters");
+    const btnAmount = document.getElementById("btn-mode-amount");
+    const grpLiters = document.getElementById("group-input-liters");
+    const grpAmount = document.getElementById("group-input-amount");
+
+    if (mode === "AMOUNT") {
+      btnAmount.className = "py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-emerald-700 text-white shadow-sm";
+      btnLiters.className = "py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all text-secondary hover:text-primary";
+      grpAmount.classList.remove("hidden");
+      grpLiters.classList.add("hidden");
+      document.getElementById("modal-input-amount").focus();
+    } else {
+      btnLiters.className = "py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-primary text-white shadow-sm";
+      btnAmount.className = "py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all text-secondary hover:text-emerald-700";
+      grpLiters.classList.remove("hidden");
+      grpAmount.classList.add("hidden");
+      document.getElementById("modal-input-liters").focus();
+    }
+    calculateModalTotal();
+  }
+
+  function onLitersInputChanged() {
+    const liters = parseFloat(document.getElementById("modal-input-liters").value) || 0;
+    const amount = Math.round(liters * activeModalUnitPrice);
+    document.getElementById("modal-input-amount").value = amount;
+    calculateModalTotal();
+  }
+
+  function onAmountInputChanged() {
+    const amount = parseFloat(document.getElementById("modal-input-amount").value) || 0;
+    const liters = activeModalUnitPrice > 0 ? parseFloat((amount / activeModalUnitPrice).toFixed(2)) : 0;
+    document.getElementById("modal-input-liters").value = liters;
+    calculateModalTotal();
+  }
+
+  function setQuickLiters(l) {
+    document.getElementById("modal-input-liters").value = l;
+    onLitersInputChanged();
+  }
+
+  function setQuickAmount(amt) {
+    document.getElementById("modal-input-amount").value = amt;
+    onAmountInputChanged();
+  }
+
+  function calculateModalTotal() {
+    let liters = parseFloat(document.getElementById("modal-input-liters").value) || 0;
+    let amount = parseFloat(document.getElementById("modal-input-amount").value) || 0;
+
+    if (activeModalMode === "AMOUNT") {
+      liters = activeModalUnitPrice > 0 ? parseFloat((amount / activeModalUnitPrice).toFixed(2)) : 0;
+    } else {
+      amount = Math.round(liters * activeModalUnitPrice);
+    }
+
+    document.getElementById("modal-liters-calc").textContent = `${liters.toLocaleString()} Lít`;
+    document.getElementById("modal-total-calc").textContent = `${amount.toLocaleString()} đ`;
+
+    // Tính chỉ số lít còn lại sau bơm
+    const remainingAfter = Math.max(0, activeModalTankCurrentLiters - liters);
+    document.getElementById("modal-tank-after").textContent = `${remainingAfter.toLocaleString()} Lít`;
+  }
+
+  async function submitPumpCompleteModal() {
+    const action = stationScope.capture(); if (!stationScope.current(action)) return;
+    if (!activeModalYcMa) return;
+    const liters = parseFloat(document.getElementById("modal-input-liters").value) || 0;
+    const amount = parseFloat(document.getElementById("modal-input-amount").value) || 0;
+
+    if (activeModalMode === "AMOUNT" && amount <= 0) {
+      alert("Vui lòng nhập số tiền hợp lệ!");
+      return;
+    }
+    if (activeModalMode === "LITERS" && liters <= 0) {
+      alert("Vui lòng nhập số lít thực tế hợp lệ!");
+      return;
+    }
+
+    try {
+      const payload = {
+        dongia: activeModalUnitPrice
+      };
+      if (activeModalMode === "AMOUNT") {
+        payload.so_tien_thuc_te = amount;
+        payload.so_lit_thuc_te = liters;
+      } else {
+        payload.so_lit_thuc_te = liters;
+        payload.so_tien_thuc_te = amount;
+      }
+      if (window.PetroOperations) {
+        if (activeModalMode === 'AMOUNT' && !confirm(`Xác nhận đã đo thực tế ${liters} L? Không dùng số lít ước tính nếu chưa đo.`)) return;
+        // Server computes the invoice from measured liters and the frozen quote.
+        // Do not submit the legacy UI's whole-VND-rounded estimate as authoritative.
+        delete payload.so_tien_thuc_te;
+        payload.so_lit_thuc_te = document.getElementById('modal-input-liters').value;
+      }
+
+      const res = await fetch(`/api/workflow/fuel-requests/${activeModalYcMa}/pump-complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Lỗi khi chốt đơn");
+      if (!stationScope.current(action)) return;
+
+      closePumpModal();
+      alert(`Đã chốt ${data.soluong} Lít (${data.thanhtien.toLocaleString()} đ) & xuất hóa đơn thành công! Tồn kho ${data.tank_name} còn lại: ${data.tank_liters_remaining.toLocaleString()} Lít.`);
+      await fetchOrdersOnly();
+      await fetchInventoryData();
+      await fetchReconciliationData();
+    } catch (e) {
+      if (stationScope.current(action)) alert("Lỗi: " + e.message);
+    }
+  }
+
+  // Thu tiền mặt trực tiếp
+  async function confirmCashReceipt(gd_ma) {
+    if (!gd_ma || document.getElementById('cash-receipt-dialog')) return;
+    const sid = currentStation?.tx_ma;
+    const action = stationScope.capture(); if (!stationScope.current(action)) return;
+    const dialog = document.createElement('dialog'); dialog.id = 'cash-receipt-dialog';
+    dialog.className = 'rounded-2xl border p-5 max-w-md w-full space-y-3';
+    const title = document.createElement('h3'); title.textContent = `Xác nhận tiền mặt cho ${gd_ma}`;
+    const feedback = document.createElement('p'); feedback.setAttribute('role', 'status');
+    const save = document.createElement('button'); save.type = 'button'; save.className = 'border rounded-xl p-3'; save.textContent = 'Xác nhận đã thu đủ tiền mặt';
+    const close = document.createElement('button'); close.type = 'button'; close.className = 'border rounded-xl p-3'; close.textContent = 'Chưa thu tiền';
+    close.onclick = () => { dialog.close(); dialog.remove(); };
+    dialog.oncancel = () => dialog.remove();
+    save.onclick = async () => {
+      if (save.disabled) return;
+      if (!stationScope.current(action)) { feedback.textContent = 'Đã đổi trạm; đóng và kiểm tra lại giao dịch.'; return; }
+      save.disabled = true; close.disabled = true; feedback.textContent = 'Đang xác nhận…';
+      try {
+        const res = await fetch("/api/payment/cash-confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gd_ma })
+        });
+        const result = await res.json();
+        if (!stationScope.current(action)) return;
+        if (!res.ok) throw new Error(result.detail || "Lỗi khi xác nhận tiền mặt");
+        await fetchOrdersOnly();
+        await fetchReconciliationData();
+        await fetchInvoicesData();
+        if (!stationScope.current(action)) return;
+        feedback.textContent = 'Đã xác nhận thu tiền mặt; hóa đơn đã được thanh toán.';
+        save.remove(); close.disabled = false; close.textContent = 'Đóng';
+      } catch (e) { if (stationScope.current(action)) { feedback.textContent = e.message; save.disabled = false; close.disabled = false; } }
+    };
+    dialog.append(title, feedback, save, close); document.body.append(dialog); dialog.showModal();
+  }
+
+  // Hủy yêu cầu nạp nhiên liệu khi khách không bơm nữa
+  async function cancelOrderByEnterprise(yc_ma) {
+    const action = stationScope.capture(); if (!stationScope.current(action)) return;
+    if (window.PetroOperations) {
+      const intent = await PetroLifecycle.confirmAction('Hủy trước khi bơm ' + yc_ma, true); if (!intent || !stationScope.current(action)) return;
+      try { const response = await fetch(`/api/workflow/fuel-requests/${yc_ma}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(intent) }); const body = await response.json(); if (!stationScope.current(action)) return; if (!response.ok) throw new Error(body.detail || 'Không thể hủy'); await fetchOrdersOnly(); await fetchInventoryData(); } catch (error) { if (stationScope.current(action)) alert(error.message); } return;
+    }
+    if (!yc_ma) return;
+    if (!confirm(`Xác nhận hủy yêu cầu ${yc_ma}? (Trường hợp khách không bơm nữa hoặc xe đã rời đi)`)) return;
+    let confirmNoDispense = false;
+    if (window.PetroOperations) {
+      confirmNoDispense = confirm('Bạn xác nhận CHƯA xuất bất kỳ nhiên liệu nào cho đơn này? Nếu đã bơm, không được hủy để hoàn tồn.');
+      if (!confirmNoDispense) return;
+    }
+
+    try {
+      const res = await fetch(`/api/workflow/fuel-requests/${yc_ma}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Nhân viên trạm hủy: Khách không cần bơm nữa", ...(window.PetroOperations ? { confirm_no_dispense: confirmNoDispense } : {}) })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Không thể hủy yêu cầu");
+
+      alert("Đã hủy yêu cầu thành công. Yêu cầu đã được loại bỏ khỏi hàng chờ.");
+      await fetchOrdersOnly();
+      await fetchInventoryData();
+    } catch (e) {
+      alert("Lỗi: " + e.message);
+    }
+  }
+
+  // ==========================================================
+  // 2. QUẢN LÝ TRỤ BƠM & 3. BỒN CHỨA & TỒN KHO MODULES
+  // ==========================================================
+  async function fetchInventoryData() {
+    if (!currentStation) return;
+    const inventoryStationId = currentStation.tx_ma;
+    const ticket = stationScope.begin('inventory');
+    inventoryLoadState('loading');
+    try {
+      const res = await fetch(`/api/doanh-nghiep/inventory?tx_ma=${encodeURIComponent(inventoryStationId)}`);
+      const canonicalInventory = await stationResponse(res, ticket);
+      if (!stationScope.current(ticket)) return;
+      currentInventoryData = canonicalInventory;
+      if (window.PetroOperationalSetup) window.PetroOperationalSetup.update(canonicalInventory, currentStation);
+
+      // Update KPI overview
+      document.getElementById("stat-kpi-inventory").textContent = `${currentInventoryData.total_current_liters.toLocaleString()} L`;
+      document.getElementById("stat-kpi-inv-bar").style.width = `${currentInventoryData.overall_percentage}%`;
+      document.getElementById("stat-kpi-inv-pct").textContent = `${currentInventoryData.overall_percentage}% dung tích`;
+
+      // Render Pumps
+      renderPumps(currentInventoryData.pumps || []);
+
+      // Render Tanks
+      renderTanks(currentInventoryData.tanks || []);
+
+      // Render Refill History
+      renderRefillHistory(currentInventoryData.refill_history || []);
+      inventoryLoadState('ready');
+      if (currentOrderRows) renderOrders(currentOrderRows);
+    } catch (e) {
+      if (!stationScope.current(ticket)) return;
+      currentInventoryData = null;
+      inventoryLoadState('error', e.message);
+      if (window.PetroOperations) window.PetroOperations.error(e.message);
+      else console.error(e);
+    }
+  }
+
+  function inventoryLoadState(state, message = '') {
+    const pending = state !== 'ready';
+    document.getElementById('inventory-load-status').textContent = state === 'loading' ? 'Đang tải cấu hình kho…' : state === 'error' ? `Không thể tải kho: ${message}` : 'Đã tải dữ liệu kho theo trạm.';
+    document.getElementById('inventory-retry').classList.toggle('hidden', state !== 'error');
+    document.getElementById('inventory-refill-button').disabled = pending || !currentInventoryData?.tanks?.length;
+    if (pending) {
+      currentInventoryData = null;
+      document.getElementById('stat-kpi-inventory').textContent = '—';
+      document.getElementById('stat-kpi-inv-pct').textContent = state === 'error' ? 'Dữ liệu kho không khả dụng' : 'Đang tải…';
+      document.getElementById('stat-kpi-inv-bar').style.width = '0%';
+      document.getElementById('stat-kpi-pumps').textContent = '—';
+      document.getElementById('dn-tanks-grid').replaceChildren();
+      document.getElementById('dn-pumps-grid').replaceChildren();
+      if (window.PetroOperationalSetup) window.PetroOperationalSetup.unavailable(state, message);
+    }
+  }
+
+  // Render Pump Cards
+  function renderPumps(pumps) {
+    document.getElementById('ops-pump-count').textContent = `Tổng cộng: ${pumps.length} Trụ bơm`;
+    pumps = pumps.map(p => { const view = PetroEnterpriseUI.equipment(p, currentStation?.tx_ma, 'pump'); return { ...p, pump_name: escapeOperationalText(view.label), demo_note: escapeOperationalText(view.note), pump_code: escapeOperationalText(p.pump_code) }; });
+    const container = document.getElementById("dn-pumps-grid");
+    container.innerHTML = "";
+
+    let activePumpsCount = 0;
+    if (!pumps.length) { const empty = document.createElement('p'); empty.textContent = 'Chưa cấu hình trụ bơm. Mở mục Bồn chứa & tồn kho để thêm thiết bị.'; container.appendChild(empty); }
+
+    pumps.forEach(p => {
+      const isReady = p.status === "READY";
+      const isPumping = p.status === "PUMPING";
+      const isMaint = p.status === "MAINTENANCE";
+
+      if (isReady || isPumping) activePumpsCount++;
+
+      let statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">Sẵn sàng</span>`;
+      let cardBorder = "border-outline-variant/30";
+      if (p.status === 'OFFLINE') statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-800">Ngoại tuyến (OFFLINE)</span>';
+      if (isPumping) {
+        statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-blue-100 text-blue-800 border border-blue-300 animate-pulse">Đang bơm</span>`;
+        cardBorder = "border-blue-500 bg-blue-50/20";
+      } else if (isMaint) {
+        statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-amber-100 text-amber-800 border border-amber-300">Bảo trì</span>`;
+        cardBorder = "border-amber-400 bg-amber-50/20";
+      }
+
+      const card = document.createElement("div");
+      card.className = `card-base p-md rounded-2xl border-2 ${cardBorder} shadow-sm space-y-3 flex flex-col justify-between`;
+      card.innerHTML = `
+        <div>
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <div class="text-xs font-bold text-secondary font-mono">${p.pump_code}</div>
+              <h4 class="font-bold text-on-surface text-base">${p.pump_name}</h4>
+              <p class="text-xs text-secondary mt-1">${p.demo_note}</p>
+            </div>
+            ${statusBadge}
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-surface-container-low text-xs space-y-1 my-2">
+            <span class="text-secondary block font-semibold">Vòi nhiên liệu kết nối:</span>
+            <div class="flex flex-wrap gap-1">
+              ${p.fuels.map(f => `<span class="px-2 py-0.5 rounded-md bg-white border border-outline-variant/30 font-bold text-primary">${f}</span>`).join("")}
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center text-xs pt-1">
+            <span class="text-secondary">Đồng hồ lũy kế:</span>
+            <span class="font-mono font-black text-sm text-primary">${p.totalizer_liters.toLocaleString()} L</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-outline-variant/20 flex gap-2">
+          ${p.status === 'PUMPING' ? '<span class="p-3">Trụ đang bơm; không được đổi trạng thái thủ công.</span>' : isReady ? `
+            <button type="button" onclick="setPumpStatus('${p.pump_id}', 'MAINTENANCE')" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-bold border border-amber-500 text-amber-700 hover:bg-amber-50">
+              Báo Bảo Trì
+            </button>
+          ` : `
+            <button type="button" onclick="setPumpStatus('${p.pump_id}', 'READY')" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700">
+              Mở Sẵn Sàng
+            </button>
+          `}
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+    document.getElementById("stat-kpi-pumps").textContent = `${activePumpsCount} / ${pumps.length}`;
+  }
+
+  async function setPumpStatus(pump_id, new_status) {
+    if (window.PetroOperations) return window.PetroOperations.setStatus(pump_id, new_status);
+    if (!currentStation) return;
+    try {
+      const res = await fetch(`/api/doanh-nghiep/pumps/${currentStation.tx_ma}/${pump_id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: new_status })
+      });
+      if (!res.ok) throw new Error("Lỗi cập nhật trạng thái");
+      await fetchInventoryData();
+    } catch (e) {
+      alert("Lỗi: " + e.message);
+    }
+  }
+
+  // Render Tanks with Liquid Gauges
+  function renderTanks(tanks) {
+    tanks = tanks.map(t => { const view = PetroEnterpriseUI.equipment(t, currentStation?.tx_ma, 'tank'); return { ...t, tank_name: escapeOperationalText(view.label), demo_note: escapeOperationalText(view.note), fuel_name: escapeOperationalText(currentStation?.prices?.find(f => f.nl_ma === t.nl_ma)?.nl_ten || t.nl_ma) }; });
+    const container = document.getElementById("dn-tanks-grid");
+    container.innerHTML = "";
+    if (!tanks.length) { const empty = document.createElement('p'); empty.textContent = 'Chưa có bồn chứa. Thêm bồn với tồn ban đầu 0 trước khi nhập kho.'; container.appendChild(empty); }
+
+    tanks.forEach(t => {
+      let colorClass = "bg-primary text-primary";
+      let statusText = "Mức an toàn";
+      let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">An toàn</span>`;
+
+      if (t.alert_status === "CRITICAL") {
+        colorClass = "bg-red-600 text-red-600";
+        statusText = "Cảnh báo: Sắp hết xăng!";
+        statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold uppercase bg-red-100 text-red-800 border border-red-300 animate-pulse">Cần nhập gấp</span>`;
+      } else if (t.alert_status === "WARNING") {
+        colorClass = "bg-amber-500 text-amber-600";
+        statusText = "Chú ý nhập hàng";
+        statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold uppercase bg-amber-100 text-amber-800 border border-amber-300">Sắp chạm ngưỡng</span>`;
+      }
+
+      const card = document.createElement("div");
+      card.className = "card-base p-lg rounded-2xl border border-outline-variant/30 shadow-sm space-y-4 bg-white flex flex-col justify-between";
+      card.innerHTML = `
+        <div>
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="text-xs font-mono font-bold text-secondary uppercase">${t.tank_id}</span>
+              <h4 class="font-bold text-on-surface text-base">${t.tank_name}</h4>
+              <p class="text-xs text-secondary mt-1">${t.demo_note}</p>
+              <span class="text-xs text-primary font-bold">${t.fuel_name}</span>
+            </div>
+            ${statusBadge}
+          </div>
+
+          <!-- Liquid Gauge Progress Bar -->
+          <div class="my-4">
+            <div class="flex justify-between items-baseline mb-1">
+              <span class="text-2xl font-black ${colorClass}">${t.current_liters.toLocaleString()} L</span>
+              <span class="text-xs font-bold text-secondary">/ ${t.capacity.toLocaleString()} L</span>
+            </div>
+            <div class="w-full bg-surface-container-high rounded-full h-4 p-0.5 overflow-hidden border border-outline-variant/30">
+              <div class="h-full rounded-full transition-all duration-700 ${colorClass.split(" ")[0]}" style="width: ${t.percentage}%"></div>
+            </div>
+            <div class="flex justify-between items-center text-[11px] text-secondary mt-1">
+              <span class="font-bold">${t.percentage}% dung tích</span>
+              <span>Ngưỡng cảnh báo: ${t.min_alert_liters.toLocaleString()} L</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-outline-variant/20 flex justify-between items-center text-xs">
+          <span class="text-secondary">Cập nhật: ${escapeOperationalText(t.last_updated || 'Chưa có thời gian cập nhật')}</span>
+          <button type="button" onclick="quickRefill('${t.tank_id}')" class="text-primary font-bold hover:underline flex items-center gap-0.5">
+            <span class="material-symbols-outlined text-sm">add_circle</span> Nhập bồn này
+          </button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function renderRefillHistory(history) {
+    history = history.map(h => ({ ...h, tank_name: escapeOperationalText(PetroEnterpriseUI.tankLabel(h.tank_name, currentInventoryData, currentStation?.tx_ma)), supplier: escapeOperationalText(h.supplier ?? '') }));
+    const tbody = document.getElementById("dn-refill-history-body");
+    tbody.innerHTML = "";
+    if (history.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-secondary">Chưa có bản ghi nhập kho nào.</td></tr>`;
+      return;
+    }
+
+    history.forEach(h => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="py-2.5 px-4 font-mono font-bold text-primary">${h.refill_id}</td>
+        <td class="py-2.5 px-4 font-bold text-on-surface">${h.tank_name}</td>
+        <td class="py-2.5 px-4 font-black text-emerald-700">+${h.liters.toLocaleString()} Lít</td>
+        <td class="py-2.5 px-4 text-secondary">${h.supplier}</td>
+        <td class="py-2.5 px-4 text-secondary">${h.created_at}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Refill Modal
+  function openRefillModal() {
+    if (!currentInventoryData?.tanks?.length) { alert('Hãy thêm bồn chứa trước khi nhập kho.'); return; }
+    const select = document.getElementById("refill-select-tank");
+    select.innerHTML = "";
+    currentInventoryData.tanks.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.tank_id;
+      const view = PetroEnterpriseUI.equipment(t, currentStation?.tx_ma, 'tank');
+      opt.textContent = `${view.label}${view.demo ? ' · DEMO' : ''} (Hiện có: ${t.current_liters.toLocaleString()} L / ${t.capacity.toLocaleString()} L)`;
+      select.appendChild(opt);
+    });
+    document.getElementById("modal-refill-tank").classList.remove("hidden");
+  }
+
+  function quickRefill(tank_id) {
+    openRefillModal();
+    document.getElementById("refill-select-tank").value = tank_id;
+  }
+
+  function closeRefillModal() {
+    document.getElementById("modal-refill-tank").classList.add("hidden");
+  }
+
+  async function submitRefillTank() {
+    if (window.PetroOperations) return window.PetroOperations.refill();
+    if (!currentStation) return;
+    const tank_id = document.getElementById("refill-select-tank").value;
+    const liters = parseFloat(document.getElementById("refill-input-liters").value) || 0;
+    const supplier = document.getElementById("refill-input-supplier").value.trim();
+
+    if (liters <= 0) {
+      alert("Vui lòng nhập số lít hợp lệ!");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/doanh-nghiep/inventory/refill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tx_ma: currentStation.tx_ma,
+          tank_id,
+          liters,
+          supplier
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Lỗi nhập kho");
+
+      closeRefillModal();
+      alert(data.message);
+      await fetchInventoryData();
+    } catch (e) {
+      alert("Lỗi: " + e.message);
+    }
+  }
+
+  // ==========================================================
+  // 4. BẢNG GIÁ NHIÊN LIỆU (Fuel Prices)
+  // ==========================================================
+  function renderPriceCards(prices) {
+    const container = document.getElementById("dn-fuel-price-cards");
+    container.innerHTML = "";
+    prices.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "card-base p-md md:p-lg border border-outline-variant/30 space-y-md bg-white rounded-2xl";
+      card.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <span class="text-xs font-mono font-bold text-secondary uppercase">${p.nl_ma}</span>
+            <h4 class="text-title-md font-bold text-on-surface mt-1">${p.nl_ten}</h4>
+          </div>
+          <span class="material-symbols-outlined text-primary text-2xl">oil_barrel</span>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-secondary mb-1">Đơn giá niêm yết (VNĐ/Lít):</label>
+          <div class="flex items-center gap-2">
+            <input type="number" step="100" class="input-base text-xl font-black text-primary py-2 px-3 rounded-xl border border-outline-variant/40 w-full" id="price-input-${p.nl_ma}" value="${p.dongia ?? ""}" placeholder="Chưa có giá">
+            <span class="font-bold text-secondary">đ</span>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function applyZoneBenchmarkPrice(zone) {
+    if (!currentStation || !currentStation.prices) {
+      alert("Chưa chọn trạm hoặc chưa có dữ liệu giá.");
+      return;
+    }
+    const factor = zone === 2 ? 1.02 : 1.0;
+    currentStation.prices.forEach(p => {
+      const input = document.getElementById(`price-input-${p.nl_ma}`);
+      if (input && p.dongia) {
+        input.value = Math.round(p.dongia * factor);
+      }
+    });
+    alert(`Đã áp dụng mẫu giá ${zone === 1 ? 'Vùng 1 (Đô thị / Gần kho cảng)' : 'Vùng 2 (+2% địa bàn xa kho cảng)'}. Bấm "Lưu bảng giá niêm yết mới" để cập nhật.`);
+  }
+
+  async function saveStationPrices() {
+    const action = stationScope.capture(); if (!stationScope.current(action)) return;
+    if (!currentStation || !currentStation.prices) return;
+    const updated = [];
+    currentStation.prices.forEach(p => {
+      const input = document.getElementById(`price-input-${p.nl_ma}`);
+      if (input) {
+        const val = parseFloat(input.value);
+        if (Number.isFinite(val) && val > 0) updated.push({ nl_ma: p.nl_ma, dongia: val });
+      }
+    });
+
+    try {
+      const res = await fetch(`/api/doanh-nghiep/stations/${currentStation.tx_ma}/prices`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prices: updated })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Không thể cập nhật giá");
+      if (!stationScope.current(action)) return;
+
+      alert(data.message);
+      await loadAllEnterpriseData();
+    } catch (e) {
+      if (stationScope.current(action)) alert("Lỗi: " + e.message);
+    }
+  }
+
+  // ==========================================================
+  // 5. HÓA ĐƠN BÁN HÀNG (Invoices)
+  // ==========================================================
+  enterpriseInvoices = [];
+
+  async function fetchInvoicesData() {
+    if (!currentStation) {
+      const tbody = document.getElementById("dn-invoices-table-body");
+      if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="py-8 text-center text-secondary">Chưa có trạm xăng nào được chọn.</td></tr>';
+      return;
+    }
+    const ticket = stationScope.begin('invoices'), sid = currentStation.tx_ma;
+    try {
+      const res = await fetch(`/api/doanh-nghiep/invoices?tx_ma=${encodeURIComponent(sid)}`);
+      const data = await stationResponse(res, ticket);
+      if (!stationScope.current(ticket)) return;
+      enterpriseInvoices = data.invoices || [];
+      document.getElementById("dn-invoices-count").textContent = `${data.total || 0} hóa đơn`;
+      renderInvoicesTable(enterpriseInvoices);
+    } catch (e) {
+      stationError(e, ticket);
+    }
+  }
+
+  function renderInvoicesTable(invoices) {
+    const tbody = document.getElementById("dn-invoices-table-body");
+    tbody.innerHTML = "";
+    if (invoices.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-secondary">Chưa có hóa đơn nào được xuất.</td></tr>`;
+      return;
+    }
+
+    invoices.forEach(inv => {
+      const isCash = inv.payment_method.includes("TIEN_MAT") || inv.payment_method.includes("CASH");
+      const methodBadge = isCash
+        ? `<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Tiền mặt</span>`
+        : `<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">VietQR</span>`;
+
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-primary/5 transition-colors whitespace-nowrap";
+      tr.innerHTML = `
+        <td class="py-2.5 px-3.5 font-mono font-bold text-primary whitespace-nowrap">${inv.gd_ma}</td>
+        <td class="py-2.5 px-3.5 text-secondary text-xs whitespace-nowrap">${inv.date}</td>
+        <td class="py-2.5 px-3.5 font-medium text-on-surface whitespace-nowrap">${inv.customer_id}</td>
+        <td class="py-2.5 px-3.5 whitespace-nowrap">
+          <span class="font-mono font-bold text-xs bg-surface-container-low px-2 py-0.5 rounded border border-outline-variant/30 text-on-surface whitespace-nowrap">${inv.plate}</span>
+        </td>
+        <td class="py-2.5 px-3.5 text-on-surface font-medium whitespace-nowrap">${inv.fuel_name}</td>
+        <td class="py-2.5 px-3.5 font-bold text-right whitespace-nowrap">${inv.liters} L</td>
+        <td class="py-2.5 px-3.5 text-secondary text-right font-mono whitespace-nowrap">${inv.unit_price != null ? inv.unit_price.toLocaleString() + " đ" : "—"}</td>
+        <td class="py-2.5 px-3.5 font-black text-emerald-700 text-right font-mono whitespace-nowrap">${inv.total_amount.toLocaleString()} đ</td>
+        <td class="py-2.5 px-3.5 text-center whitespace-nowrap">${methodBadge}</td>
+        <td class="py-2.5 px-3.5 text-center whitespace-nowrap">
+          <button type="button" onclick="viewInvoiceDetail('${inv.gd_ma}')" class="btn-secondary py-1 px-2.5 text-xs font-bold rounded-lg inline-flex items-center gap-1 hover:bg-primary/10 text-primary transition-colors whitespace-nowrap">
+            <span class="material-symbols-outlined text-sm">visibility</span>
+            <span>Chi tiết</span>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function viewInvoiceDetail(gd_ma) {
+    const inv = enterpriseInvoices.find(i => i.gd_ma === gd_ma);
+    if (!inv) return;
+
+    const content = document.getElementById("invoice-modal-content");
+    content.innerHTML = `
+      <div class="text-center pb-2 border-b border-outline-variant/30 space-y-0.5">
+        <h3 class="font-bold text-sm text-primary uppercase tracking-wider">HÓA ĐƠN BÁN LẺ XĂNG DẦU</h3>
+        <p class="text-[11px] text-secondary">${petroEscapeHtml(inv.tx_ten)}</p>
+        <p class="text-[10px] text-secondary">Mã giao dịch: <b>${inv.gd_ma}</b> - Ngày: ${inv.date}</p>
+      </div>
+
+      <div class="py-2 space-y-1 text-xs">
+        <div class="flex justify-between"><span>Khách hàng:</span><b>${inv.customer_id}</b></div>
+        <div class="flex justify-between"><span>Biển số xe:</span><b class="font-mono">${inv.plate}</b></div>
+        <div class="flex justify-between"><span>Mặt hàng:</span><b>${inv.fuel_name}</b></div>
+        <div class="flex justify-between"><span>Số lượng:</span><b>${inv.liters} Lít</b></div>
+        <div class="flex justify-between"><span>Đơn giá niêm yết:</span><b>${inv.unit_price != null ? inv.unit_price.toLocaleString() + " đ/L" : "Chưa có giá"}</b></div>
+        <div class="flex justify-between border-t border-outline-variant/30 pt-1 text-sm font-black text-primary">
+          <span>TỔNG TIỀN (ĐÃ VAT):</span>
+          <span>${inv.total_amount.toLocaleString()} đ</span>
+        </div>
+        <div class="flex justify-between text-[11px] text-secondary pt-1">
+          <span>Hình thức thanh toán:</span>
+          <b>${inv.payment_method}</b>
+        </div>
+        <div class="flex justify-between text-[11px] text-emerald-700 font-bold">
+          <span>Trạng thái giao dịch:</span>
+          <span>ĐÃ THANH TOÁN HOÀN TẤT</span>
+        </div>
+      </div>
+      <div class="text-center text-[10px] text-secondary pt-2 border-t border-outline-variant/30">
+        Cảm ơn quý khách! Chúc quý khách vạn dặm bình an!
+      </div>
+    `;
+    document.getElementById("modal-view-invoice").classList.remove("hidden");
+  }
+
+  function closeInvoiceModal() {
+    document.getElementById("modal-view-invoice").classList.add("hidden");
+  }
+
+  // ==========================================================
+  // 6. BÁO CÁO DOANH THU & ĐỐI SOÁT (Reconciliation)
+  // ==========================================================
+  async function fetchReconciliationData() {
+    if (!currentStation) return;
+    const ticket = stationScope.begin('reconciliation'), sid = currentStation.tx_ma;
+    try {
+      const res = await fetch(`/api/doanh-nghiep/reports/reconciliation?tx_ma=${encodeURIComponent(sid)}`);
+      const data = await stationResponse(res, ticket);
+      if (!stationScope.current(ticket)) return;
+
+      // Top KPI cards
+      document.getElementById("stat-kpi-revenue").textContent = `${data.total_revenue.toLocaleString()} đ`;
+      document.getElementById("stat-kpi-liters").textContent = `${data.total_liters.toLocaleString()} L`;
+      document.getElementById("stat-kpi-cash").textContent = `${data.cash.revenue.toLocaleString()} đ`;
+      document.getElementById("stat-kpi-digital").textContent = `${data.digital.revenue.toLocaleString()} đ`;
+
+      // Reconciliation Tab
+      document.getElementById("rec-cash-amount").textContent = `${data.cash.revenue.toLocaleString()} đ`;
+      document.getElementById("rec-cash-liters").textContent = `${data.cash.liters.toLocaleString()} Lít`;
+      document.getElementById("rec-cash-orders").textContent = `${data.cash.order_count} đơn`;
+      document.getElementById("rec-cash-pct").textContent = `${data.cash.percentage}% cơ cấu`;
+
+      document.getElementById("rec-digital-amount").textContent = `${data.digital.revenue.toLocaleString()} đ`;
+      document.getElementById("rec-digital-liters").textContent = `${data.digital.liters.toLocaleString()} Lít`;
+      document.getElementById("rec-digital-orders").textContent = `${data.digital.order_count} đơn`;
+      document.getElementById("rec-digital-pct").textContent = `${data.digital.percentage}% cơ cấu`;
+
+      // Fuel breakdown table
+      const tbody = document.getElementById("dn-fuel-breakdown-body");
+      tbody.innerHTML = "";
+      if (!data.fuel_breakdown || data.fuel_breakdown.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-secondary">Chưa có phát sinh sản lượng.</td></tr>`;
+      } else {
+        data.fuel_breakdown.forEach(f => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="py-2.5 px-4 font-bold text-on-surface">${f.fuel_name}</td>
+            <td class="py-2.5 px-4 text-secondary">${f.count} lượt</td>
+            <td class="py-2.5 px-4 font-mono font-bold text-primary">${f.liters.toLocaleString()} Lít</td>
+            <td class="py-2.5 px-4 font-black text-on-surface">${f.amount.toLocaleString()} đ</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    } catch (e) {
+      stationError(e, ticket);
+    }
+  }
+</script>
+<script src="/static/js/operational_setup.js?v=5.8c2" defer></script>
+<script src="/static/js/station_amenity_ui.js?v=5.5.0" defer></script>
+<script src="/static/js/station_approval.js?v=self-service-1" defer></script>
+{% endblock %}

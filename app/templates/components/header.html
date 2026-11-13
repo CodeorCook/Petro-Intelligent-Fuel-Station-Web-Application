@@ -1,0 +1,203 @@
+<!-- TopNavBar Component -->
+<header class="w-full top-0 sticky z-50 bg-surface-container-lowest shadow-sm border-b border-surface-container-high">
+  <div class="flex justify-between items-center px-container-margin md:px-lg py-sm max-w-7xl mx-auto">
+    <!-- Brand Logo -->
+    <a href="/" class="flex items-center gap-xs focus:outline-none group">
+      <svg class="w-9 h-9 md:w-10 md:h-10 text-primary group-hover:scale-105 transition-transform shrink-0" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM12 10H6V5h6v5zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+      </svg>
+      <span class="font-display-lg text-display-lg text-[28px] md:text-[34px] font-bold text-primary tracking-tight">Petro</span>
+    </a>
+    
+    <!-- Desktop Navigation -->
+    <nav class="hidden md:flex gap-md lg:gap-lg items-center text-sm font-medium" id="header-nav-links">
+      <a href="/" class="nav-link text-on-surface-variant hover:text-primary transition-colors pb-xs cursor-pointer font-medium active:opacity-80" data-path="/">Trang chủ</a>
+      <a href="/BanDo.html" class="nav-link text-on-surface-variant hover:text-primary transition-colors pb-xs cursor-pointer font-medium active:opacity-80" data-path="/BanDo.html">Bản đồ</a>
+      <!-- [Ghi chú] Code gốc: <a href="/ThanhToan.html" class="nav-link text-on-surface-variant hover:text-primary transition-colors pb-xs cursor-pointer font-medium active:opacity-80" data-path="/ThanhToan.html">Đặt xăng</a> -->
+      <a href="/ThanhToan.html" id="nav-link-datxang" class="hidden nav-link text-on-surface-variant hover:text-primary transition-colors pb-xs cursor-pointer font-medium active:opacity-80" data-path="/ThanhToan.html">Đặt xăng</a>
+      <a href="/GiaXangDau.html" class="nav-link text-on-surface-variant hover:text-primary transition-colors pb-xs cursor-pointer font-medium active:opacity-80" data-path="/GiaXangDau.html">Giá xăng dầu</a>
+      <a href="/LichSu.html" id="nav-link-lichsu" class="nav-link text-on-surface-variant hover:text-primary transition-colors pb-xs cursor-pointer font-medium active:opacity-80" data-path="/LichSu.html">Lịch sử</a>
+      
+      <!-- Role-specific link (Injected by JS) -->
+      <a href="/TiepNhanBom.html" id="nav-link-tiepnhan" class="hidden nav-link text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg hover:bg-emerald-100 transition-colors pb-xs cursor-pointer font-bold active:opacity-80" data-path="/TiepNhanBom.html">
+        ⛽ Tiếp nhận bơm xăng
+      </a>
+      <a href="/QuanLyTram.html" id="nav-link-dn" class="hidden nav-link text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg hover:bg-blue-100 transition-colors pb-xs cursor-pointer font-bold active:opacity-80" data-path="/QuanLyTram.html">
+        🏢 Quản lý trạm
+      </a>
+      <a href="/TrangThaiDoanhNghiep.html" id="nav-link-hsdn" class="hidden nav-link text-primary font-bold">Hồ sơ doanh nghiệp</a>
+    </nav>
+    
+    <!-- Action / User Profile Section -->
+    <div class="flex items-center gap-2" id="header-user-section">
+      <!-- [Ghi chú] Code gốc chỉ có 1 nút Đăng nhập:
+      <a href="/DangNhap.html" id="btn-header-login" class="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm">
+        <span class="material-symbols-outlined text-sm">login</span>
+        <span>Đăng nhập</span>
+      </a>
+      -->
+      <!-- Guest State (Hidden by default, shown if guest) -->
+      <div id="box-header-guest" class="hidden flex items-center gap-2">
+        <a href="/DangKy.html" id="btn-header-register" class="btn-secondary py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1 border border-outline-variant/60 hover:border-primary hover:text-primary transition-colors shadow-sm" title="Tạo tài khoản - Petro">
+          <span class="material-symbols-outlined text-sm">person_add</span>
+          <span>Đăng ký</span>
+        </a>
+        <a href="/DangNhap.html" id="btn-header-login" class="btn-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm" title="Đăng nhập">
+          <span class="material-symbols-outlined text-sm">login</span>
+          <span>Đăng nhập</span>
+        </a>
+      </div>
+
+      <!-- Logged In State (Hidden by default, shown by cache or JS) -->
+      <div id="box-header-user" class="hidden flex items-center gap-2">
+        <div class="hidden sm:flex flex-col items-end text-right">
+          <div class="text-xs font-bold text-on-surface leading-tight" id="header-user-name"></div>
+          <span id="header-role-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"></span>
+        </div>
+        
+        <div class="relative group">
+          <a href="/TaiKhoan.html" class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary border border-outline-variant/40 hover:border-primary transition-colors" title="Trang tài khoản">
+            <span class="material-symbols-outlined text-[24px]">account_circle</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instant Render Script: Executes synchronously during HTML parse to prevent any FOUC -->
+    <script>
+      (function() {
+        window.renderPetroHeader = function(user) {
+          const boxGuest = document.getElementById("box-header-guest");
+          const boxUser = document.getElementById("box-header-user");
+          const lblName = document.getElementById("header-user-name");
+          const lblRole = document.getElementById("header-role-badge");
+          const navDatXang = document.getElementById("nav-link-datxang");
+          const mobileNavDatXang = document.getElementById("mobile-nav-datxang");
+          const navLichSu = document.getElementById("nav-link-lichsu");
+          const navDn = document.getElementById("nav-link-dn");
+          const navTiepNhan = document.getElementById("nav-link-tiepnhan");
+          const navProfile = document.getElementById("nav-link-hsdn");
+
+          if (user && user.username) {
+            if (boxGuest) boxGuest.classList.add("hidden");
+            if (boxUser) boxUser.classList.remove("hidden");
+            if (lblName) lblName.textContent = user.name || user.username;
+
+            if (user.role === "DOANH_NGHIEP") {
+              // Tài khoản doanh nghiệp: bỏ mục đặt xăng và lịch sử cá nhân
+              if (navDatXang) navDatXang.classList.add("hidden");
+              if (mobileNavDatXang) mobileNavDatXang.classList.add("hidden");
+              if (navLichSu) navLichSu.classList.add("hidden");
+              if (navProfile) navProfile.classList.remove("hidden");
+              if (lblRole) {
+                lblRole.textContent = "🏢 Doanh nghiệp";
+                lblRole.className = "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-300";
+                lblRole.classList.remove("hidden");
+              }
+              if (navDn) {
+                navDn.href = user.enterprise_status === "DA_DUYET" ? "/QuanLyTram.html" : "/TrangThaiDoanhNghiep.html";
+                navDn.textContent = user.enterprise_status === "DA_DUYET" ? "🏢 Quản lý trạm" : "🏢 Trạng thái doanh nghiệp";
+                navDn.classList.remove("hidden");
+              }
+              if (navTiepNhan) {
+                if (user.enterprise_status === "DA_DUYET") {
+                  navTiepNhan.classList.remove("hidden");
+                } else {
+                  navTiepNhan.classList.add("hidden");
+                }
+              }
+
+            } else {
+              // Khách hàng đã đăng nhập: hiện mục đặt xăng và lịch sử
+              if (navDatXang) navDatXang.classList.remove("hidden");
+              if (mobileNavDatXang) mobileNavDatXang.classList.remove("hidden");
+              if (navLichSu) navLichSu.classList.remove("hidden");
+              if (lblRole) {
+                lblRole.textContent = "";
+                lblRole.classList.add("hidden");
+              }
+              if (navDn) navDn.classList.add("hidden");
+              if (navTiepNhan) navTiepNhan.classList.add("hidden");
+              if (navProfile) navProfile.classList.add("hidden");
+            }
+          } else {
+            // Chưa đăng nhập: ẨN đặt xăng & lịch sử, HIỆN nút Đăng ký & Đăng nhập
+            if (navDatXang) navDatXang.classList.add("hidden");
+            if (mobileNavDatXang) mobileNavDatXang.classList.add("hidden");
+            if (navLichSu) navLichSu.classList.add("hidden");
+            if (boxGuest) boxGuest.classList.remove("hidden");
+            if (boxUser) boxUser.classList.add("hidden");
+            if (navDn) navDn.classList.add("hidden");
+            if (navTiepNhan) navTiepNhan.classList.add("hidden");
+            if (navProfile) navProfile.classList.add("hidden");
+            if (lblRole) {
+              lblRole.textContent = "";
+              lblRole.classList.add("hidden");
+            }
+          }
+        };
+
+        try {
+          const cached = localStorage.getItem("petro_user");
+          if (cached) {
+            const u = JSON.parse(cached);
+            if (u && u.username) {
+              window.renderPetroHeader(u);
+              return;
+            }
+          }
+          window.renderPetroHeader(null);
+        } catch (e) {
+          window.renderPetroHeader(null);
+        }
+      })();
+    </script>
+  </div>
+</header>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Highlight active nav link based on current URL path
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+      const linkPath = link.getAttribute('data-path');
+      if (currentPath === linkPath || (linkPath === '/' && (currentPath === '' || currentPath === '/TrangChu.html')) || (linkPath === '/TiepNhanBom.html' && currentPath === '/tiep-nhan-bom')) {
+        link.classList.remove('text-on-surface-variant');
+        link.classList.add('text-primary', 'font-bold', 'border-b-2', 'border-primary');
+      }
+    });
+
+    // 2. Asynchronously verify with server /api/auth/me to stay strictly in sync
+    /* [Ghi chú] Code gốc kiểm tra đăng nhập bất đồng bộ thuần túy (được thay bằng renderPetroHeader kết hợp cache để triệt tiêu chớp nháy):
+    let user = null;
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) { user = await res.json(); }
+      else if (res.status === 401) { user = null; localStorage.removeItem("petro_user"); }
+    } catch (e) { user = null; }
+    const btnLogin = document.getElementById("btn-header-login");
+    const boxUser = document.getElementById("box-header-user");
+    if (user && user.username) {
+      if (btnLogin) btnLogin.classList.add("hidden");
+      if (boxUser) boxUser.classList.remove("hidden");
+    } else {
+      if (btnLogin) btnLogin.classList.remove("hidden");
+      if (boxUser) boxUser.classList.add("hidden");
+    }
+    */
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const user = await res.json();
+        localStorage.setItem("petro_user", JSON.stringify(user));
+        if (window.renderPetroHeader) window.renderPetroHeader(user);
+      } else if (res.status === 401) {
+        localStorage.removeItem("petro_user");
+        if (window.renderPetroHeader) window.renderPetroHeader(null);
+      }
+    } catch (e) {
+      // Keep cached UI intact on temporary network issues
+    }
+  });
+</script>

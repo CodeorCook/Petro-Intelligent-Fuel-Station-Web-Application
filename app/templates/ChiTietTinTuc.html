@@ -1,0 +1,35 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Chi tiết tin tức - Petro{% endblock %}
+
+{% block content %}
+<main class="max-w-4xl mx-auto px-container-margin py-xl space-y-lg">
+  <!-- Article Header -->
+  <header class="space-y-md border-b border-surface-container-high pb-lg">
+    <div class="flex items-center gap-3">
+      <span class="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-md font-bold">Thị trường</span>
+      <span class="text-on-surface-variant text-body-md">24/10/2023</span>
+    </div>
+    <h1 class="text-display-lg font-bold text-on-surface">Giá xăng dầu thế giới tăng mạnh, tác động thế nào đến thị trường Việt Nam?</h1>
+  </header>
+
+  <!-- Featured Image -->
+  <div class="card-base overflow-hidden h-80 md:h-[400px]">
+    <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmxnP5DUKqgOrbZDUANq9o2j35VmlYt8KWctkBpe0CVqZPklLhVoLZ2bR7aWWYjxdHZ0bZQY1f_LkZeOMGnZ0WdPDTgd6ngIeRmf57JYlk6vZXsHCLeVPENSP-wOZvFn18LSyiD_5n2ZueGEQ871P0M7FncIk01yUeaz3Shka-pyCX8k-Lp35yGMZuvvNBQSXk531loTHnpmVOuQ087WrAIL1pyexYpF4jfHxXd74W0Q6tEJungWvHuQ" alt="Tin tức xăng dầu">
+  </div>
+
+  <!-- Content Body -->
+  <article class="prose max-w-none text-body-lg text-on-surface leading-relaxed space-y-md">
+    <p class="font-semibold text-title-lg">Thị trường dầu mỏ toàn cầu đang chứng kiến những biến động lớn do tình hình địa chính trị căng thẳng tại các khu vực sản xuất dầu mỏ chính.</p>
+    <p>Các chuyên gia kinh tế dự báo trong kỳ điều hành sắp tới của Liên Bộ Công Thương - Tài chính, giá xăng dầu trong nước có thể được điều chỉnh theo xu hướng chung của thế giới.</p>
+    <p>Đại diện các doanh nghiệp đầu mối xăng dầu cho biết nguồn cung nhiên liệu vẫn được đảm bảo đầy đủ để phục vụ nhu cầu tiêu dùng và sản xuất kinh doanh của người dân.</p>
+  </article>
+
+  <!-- Back button -->
+  <div class="pt-lg">
+    <a href="/TinTuc.html" class="btn-secondary">
+      <span class="material-symbols-outlined">arrow_back</span> Quay lại danh sách tin tức
+    </a>
+  </div>
+</main>
+{% endblock %}
